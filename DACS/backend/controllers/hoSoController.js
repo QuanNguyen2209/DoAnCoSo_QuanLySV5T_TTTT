@@ -45,7 +45,8 @@ exports.getById = async (req, res) => {
         ky_xet_duyet ( * ),
         minh_chung (
           *,
-          tieu_chi ( id, ten_tieu_chi )
+          tieu_chi ( id, ten_tieu_chi ),
+          minh_chung_files ( * )
         ),
         lich_su_ho_so (
           *,
