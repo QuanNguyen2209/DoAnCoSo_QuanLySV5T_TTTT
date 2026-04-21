@@ -19,17 +19,27 @@ app.use(express.json());
 require('./config/db');
 
 // ── Routes ──────────────────────────────────────────────────
+const authRoutes        = require('./routes/auth');
 const kyXetDuyetRoutes  = require('./routes/kyXetDuyet');
 const tieuChiRoutes     = require('./routes/tieuChi');
 const hoSoRoutes        = require('./routes/hoSo');
 const minhChungRoutes   = require('./routes/minhChung');
 const userRoutes        = require('./routes/users');
+const khoaRoutes        = require('./routes/khoa');
+const lopHocRoutes      = require('./routes/lopHoc');
+const userProfileRoutes = require('./routes/userProfiles');
+const reviewerRoutes    = require('./routes/reviewer');
 
+app.use('/api/auth',         authRoutes);
 app.use('/api/ky-xet-duyet', kyXetDuyetRoutes);
 app.use('/api/tieu-chi',     tieuChiRoutes);
 app.use('/api/ho-so',        hoSoRoutes);
 app.use('/api/minh-chung',   minhChungRoutes);
 app.use('/api/users',        userRoutes);
+app.use('/api/khoa',         khoaRoutes);
+app.use('/api/lop-hoc',      lopHocRoutes);
+app.use('/api/user-profiles',userProfileRoutes);
+app.use('/api/reviewer',     reviewerRoutes);
 
 // Health check
 app.get('/', (req, res) => {

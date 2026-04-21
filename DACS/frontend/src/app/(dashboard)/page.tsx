@@ -2,8 +2,11 @@
 
 import { motion } from "framer-motion";
 import { CheckCircle2, Calendar, Heart, Users, GraduationCap, ClipboardList } from "lucide-react";
+import { useAuthStore } from "@/lib/authStore";
 
 export default function DashboardHome() {
+  const { user } = useAuthStore();
+
   return (
     <div className="p-8 flex-1 w-full max-w-[1200px] mx-auto">
       {/* Welcome Banner Card */}
@@ -20,7 +23,9 @@ export default function DashboardHome() {
               {/* Left Text Content */}
               <div className="flex-1 max-w-xl">
                 <p className="text-xs font-bold text-slate-500/80 mb-2 tracking-widest uppercase">CHÀO MỪNG TRỞ LẠI</p>
-                <h1 className="text-4xl md:text-5xl font-medium text-slate-800 mb-4 tracking-tight">Xin chào Nguyễn Lê Nguyên Quân!</h1>
+                <h1 className="text-4xl md:text-5xl font-medium text-slate-800 mb-4 tracking-tight">
+                  Xin chào {user?.ho_ten || "Bạn"}!
+                </h1>
                 <p className="text-slate-700 mb-8 font-medium">Hãy hoàn tất hồ sơ Sinh viên 5 tốt trước hạn.</p>
 
                 {/* Features List */}
