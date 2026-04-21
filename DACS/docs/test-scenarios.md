@@ -1,101 +1,146 @@
-# 🧪 Kịch Bản Kiểm Thử Chức Năng (Manual Test Scenarios)
+# 📋 Kịch bản Test (Test Scenarios)
 
-Tài liệu này mô tả các kịch bản kiểm thử (Test Scenarios) cho hệ thống **Scholastic Kinetic**, bao gồm các luồng nghiệp vụ chính cho Sinh viên, Cán bộ xét duyệt và Quản trị viên.
-
----
-
-## 1. 🎓 Nhóm Chức Năng: Sinh Viên & Lớp Trưởng
-
-### TC-01: Đăng ký danh hiệu "Sinh viên 5 Tốt" (Cá nhân)
-- **Mục tiêu**: Kiểm tra luồng đăng ký hồ sơ cá nhân.
-- **Các bước**:
-    1. Đăng nhập với vai trò Sinh viên.
-    2. Truy cập trang "Đăng ký xét duyệt".
-    3. Chọn đối tượng "Sinh viên 5 Tốt".
-    4. Chọn kỳ xét duyệt đang mở (ví dụ: Học kỳ 2 2024-2025).
-    5. Nhập thông tin minh chứng (Tên thành tích, Tiêu chí: Học tập tốt, File minh chứng).
-    6. Nhấn "Lưu bản nháp".
-- **Kết quả mong đợi**: Hồ sơ được tạo thành công ở trạng thái "Bản nháp", xuất hiện trong danh sách "Hồ sơ của tôi".
-
-### TC-02: Nộp hồ sơ chính thức
-- **Mục tiêu**: Chuyển trạng thái từ Bản nháp sang Chờ duyệt.
-- **Các bước**:
-    1. Truy cập "Hồ sơ của tôi".
-    2. Chọn hồ sơ đang ở trạng thái "Bản nháp".
-    3. Kiểm tra lại thông tin và minh chứng.
-    4. Nhấn "Nộp hồ sơ ngay".
-- **Kết quả mong đợi**: Trạng thái hồ sơ chuyển sang "Đang chờ duyệt". Sinh viên không được phép sửa/xóa hồ sơ này nữa.
-
-### TC-03: Đăng ký "Tập thể Tiên tiến" (Lớp trưởng)
-- **Mục tiêu**: Kiểm tra luồng đăng ký cho tập thể (Chi Đoàn/Lớp).
-- **Các bước**:
-    1. Đăng nhập với vai trò Lớp trưởng.
-    2. Chọn đối tượng "Tập thể Tiên tiến".
-    3. Chọn cấp xét duyệt (Cấp Khoa hoặc Cấp Trường).
-    4. Nhập các minh chứng về hoạt động phong trào của lớp.
-    5. Tiến hành nộp hồ sơ.
-- **Kết quả mong đợi**: Hồ sơ tập thể được tạo đúng loại và cấp xét duyệt.
+> **Cập nhật:** 21/04/2026
+> **Dự án:** Quản lý Sinh viên 5 Tốt & Tập thể Tiên tiến
 
 ---
 
-## 2. 🏛️ Nhóm Chức Năng: Cán Bộ Xét Duyệt (Reviewer)
+## 1. 🔑 Tài khoản Test
 
-### TC-04: Xét duyệt hồ sơ (Duyệt/Từ chối)
-- **Mục tiêu**: Kiểm tra chức năng thẩm định hồ sơ của cán bộ.
-- **Các bước**:
-    1. Đăng nhập vai trò Cán bộ Đoàn - Hội.
-    2. Truy cập "Xét duyệt hồ sơ".
-    3. Mở xem chi tiết một hồ sơ "Đang chờ duyệt".
-    4. Kiểm tra các file minh chứng đính kèm.
-    5. Nhấn "Duyệt" hoặc "Từ chối" kèm ghi chú phản hồi.
-- **Kết quả mong đợi**: Trạng thái hồ sơ cập nhật chính xác (Đã duyệt/Cần bổ sung). Sinh viên nhận được thông báo/cập nhật trạng thái.
+| Vai trò | Họ tên | Email | Mật khẩu | Ghi chú |
+|---|---|---|---|---|
+| **Sinh viên** | Sinh Vien Test | `sinhvien@test.edu.vn` | `Test1234@` | MSSV: SV_TEST_01, Lớp: CNTT01 |
+| **Cán bộ Đoàn-Hội** | Cán bộ Test | `canbo@test.edu.vn` | `Test1234@` | Quản lý tất cả lớp hiện có |
+| **Admin** | Admin Test | `admin@test.edu.vn` | `Test1234@` | Toàn quyền quản trị |
+| **Sinh viên (chủ dự án)** | Nguyễn Lê Nguyên Quân | `nguyenlebaoquan1404@gmail.com` | `Quan2209@` | MSSV: 2380601830 |
 
-### TC-05: Thống kê đơn vị
-- **Mục tiêu**: Kiểm tra tính chính xác của dữ liệu thống kê.
-- **Các bước**:
-    1. Truy cập trang "Thống kê đơn vị".
-    2. Chọn Khoa và Kỳ xét duyệt.
-    3. Kiểm tra số lượng hồ sơ Đạt/Không đạt/Đang chờ.
-- **Kết quả mong đợi**: Biểu đồ và bảng dữ liệu hiển thị đúng con số thực tế trong DB.
+### SQL Thiết lập Tài khoản
+Chạy lần lượt các file SQL sau trong **Supabase Dashboard → SQL Editor**:
+1. `database/setup_reviewer_test.sql` — Tạo bảng phân công + cấu hình cán bộ
+2. `database/setup_test_accounts.sql` — Cập nhật role Admin + gán lớp cho SV test
 
 ---
 
-## 3. ⚙️ Nhóm Chức Năng: Quản Trị Viên (Admin)
+## 2. 🧪 Kịch bản Test: Sinh viên
 
-### TC-06: Quản lý Kỳ xét duyệt
-- **Mục tiêu**: Đóng/Mở đợt xét duyệt cho toàn trường.
-- **Các bước**:
-    1. Đăng nhập vai trò Admin.
-    2. Truy cập "Quản lý Kỳ xét duyệt".
-    3. Tạo kỳ mới: Nhập tên, thời gian bắt đầu/kết thúc.
-    4. Chuyển trạng thái một kỳ cũ từ "Đang mở" (Active) sang "Đã đóng" (Closed).
-- **Kết quả mong đợi**: Khi kỳ bị đóng, sinh viên không thể tạo mới hồ sơ cho kỳ đó.
+### TC-SV-01: Đăng nhập sinh viên
+- **Mục tiêu:** Xác minh sinh viên đăng nhập thành công.
+- **Bước thực hiện:**
+  1. Truy cập `http://localhost:3000/login`
+  2. Chọn vai trò "Sinh viên"
+  3. Nhập email/mật khẩu → Click "Đăng nhập"
+- **Kết quả mong đợi:** Chuyển hướng về Trang chủ Dashboard, sidebar hiện menu Sinh viên.
 
-### TC-07: Cấu hình Tiêu chí đánh giá
-- **Mục tiêu**: Cập nhật bộ tiêu chuẩn 5 tốt.
-- **Các bước**:
-    1. Truy cập "Tiêu chí đánh giá".
-    2. Chỉnh sửa mô tả của tiêu chí "Hội nhập tốt".
-    3. Thêm một tiêu chí phụ mới.
-- **Kết quả mong đợi**: Thay đổi hiển thị ngay lập tức trong select-box của trang đăng ký sinh viên.
+### TC-SV-02: Hồ sơ điện tử (E-Profile)
+- **Mục tiêu:** Kiểm tra CRUD thông tin hồ sơ điện tử.
+- **Bước thực hiện:**
+  1. Đăng nhập SV → Click "Hồ sơ điện tử" trên sidebar
+  2. Điền các khối thông tin: Cá nhân, Liên hệ, Đào tạo, Công việc, Đoàn-Đảng
+  3. Nhập Điểm GPA, Điểm rèn luyện
+  4. Click "Lưu hồ sơ"
+  5. Tải lại trang (F5)
+- **Kết quả mong đợi:** Dữ liệu được lưu và hiển thị lại chính xác sau khi reload.
+
+### TC-SV-03: Đăng ký xét duyệt
+- **Mục tiêu:** Kiểm tra luồng tạo hồ sơ đăng ký.
+- **Bước thực hiện:**
+  1. Click "Đăng ký xét duyệt" → Chọn "Sinh viên 5 Tốt"
+  2. Điền thông tin thành tích, chọn tiêu chí, tải file minh chứng
+  3. Tiếp tục → Nộp hồ sơ
+- **Kết quả mong đợi:** Hồ sơ được tạo với trạng thái `pending` hoặc `draft`.
+
+### TC-SV-04: Xem hồ sơ của tôi
+- **Mục tiêu:** Kiểm tra danh sách hồ sơ đã nộp.
+- **Bước thực hiện:**
+  1. Click "Hồ sơ của tôi" trên sidebar
+  2. Kiểm tra bảng hiển thị mã hồ sơ, danh hiệu, trạng thái
+- **Kết quả mong đợi:** Hiển thị đúng danh sách hồ sơ của sinh viên đang đăng nhập.
 
 ---
 
-## 4. 🛡️ Kiểm thử Trường hợp Ngoại lệ (Edge Cases)
+## 3. 🧪 Kịch bản Test: Cán bộ Đoàn-Hội (Reviewer)
 
-| Mã TC | Kịch bản | Mong đợi |
-|---|---|---|
-| TC-08 | Tải file minh chứng > 10MB | Hệ thống báo lỗi "Dung lượng vượt quá giới hạn" |
-| TC-09 | Tải file sai định dạng (ví dụ: .exe) | Hệ thống chỉ chấp nhận PDF, JPG, PNG |
-| TC-10 | Nộp hồ sơ khi đã hết hạn kỳ xét duyệt | Nút "Nộp hồ sơ" bị ẩn hoặc báo lỗi "Kỳ xét duyệt đã đóng" |
-| TC-11 | Sinh viên truy cập vào link Admin | Chuyển hướng về trang Dashboard hoặc báo lỗi "Không có quyền" |
-| TC-12 | Xóa hồ sơ đã nộp thành công | Không cho phép xóa (nút xóa bị ẩn) |
+### TC-CB-01: Đăng nhập cán bộ
+- **Mục tiêu:** Xác minh cán bộ đăng nhập và thấy đúng menu.
+- **Bước thực hiện:**
+  1. Truy cập `http://localhost:3000/login`
+  2. Chọn vai trò "Cán bộ Đoàn - Hội"
+  3. Nhập `canbo@test.edu.vn` / `Test1234@` → Đăng nhập
+- **Kết quả mong đợi:** Sidebar hiện menu "Xét duyệt hồ sơ" và "Thống kê đơn vị".
+
+### TC-CB-02: Xem danh sách hồ sơ cần xét duyệt
+- **Mục tiêu:** Cán bộ thấy danh sách hồ sơ từ các lớp được phân công.
+- **Bước thực hiện:**
+  1. Click "Xét duyệt hồ sơ" trên sidebar
+  2. Kiểm tra bảng hiển thị tên SV, mã hồ sơ, lớp, trạng thái
+  3. Thử lọc theo trạng thái: "Chờ duyệt", "Đã duyệt", "Từ chối"
+  4. Thử tìm kiếm theo tên hoặc MSSV
+- **Kết quả mong đợi:** Hiển thị đúng hồ sơ thuộc lớp được phân công, bộ lọc hoạt động chính xác.
+
+### TC-CB-03: Xem chi tiết và duyệt hồ sơ
+- **Mục tiêu:** Kiểm tra luồng duyệt hồ sơ từ A-Z.
+- **Bước thực hiện:**
+  1. Click "Chấm hồ sơ" trên 1 dòng bất kỳ
+  2. Kiểm tra trang chi tiết: E-Profile SV, danh sách minh chứng, lịch sử
+  3. Click "Phê duyệt" → Nhập nhận xét → Xác nhận
+  4. Quay lại danh sách, kiểm tra trạng thái đã đổi
+- **Kết quả mong đợi:** Trạng thái hồ sơ đổi thành "Đã phê duyệt", lịch sử ghi nhận hành động.
+
+### TC-CB-04: Từ chối hồ sơ
+- **Mục tiêu:** Kiểm tra luồng từ chối hồ sơ.
+- **Bước thực hiện:**
+  1. Mở chi tiết 1 hồ sơ đang chờ duyệt
+  2. Click "Từ chối" → Nhập lý do (bắt buộc) → Xác nhận
+- **Kết quả mong đợi:** Trạng thái đổi thành "Đã từ chối", phản hồi hiển thị đúng.
+
+### TC-CB-05: Thống kê đơn vị
+- **Mục tiêu:** Kiểm tra trang thống kê theo lớp.
+- **Bước thực hiện:**
+  1. Click "Thống kê đơn vị" trên sidebar
+  2. Kiểm tra số liệu tổng (Tổng hồ sơ, Đã duyệt, Không đạt)
+  3. Kiểm tra tiến độ từng lớp (progress bar)
+- **Kết quả mong đợi:** Số liệu phản ánh đúng trạng thái thực tế trong CSDL.
 
 ---
 
-## 5. 🛠️ Quy trình thực hiện (Checklist)
+## 4. 🧪 Kịch bản Test: Admin
 
-- [ ] Chuẩn bị dữ liệu mẫu (Seeding Database).
-- [ ] Kiểm tra hiển thị giao diện trên Desktop & Mobile.
-- [ ] Kiểm tra kết nối API và xử lý lỗi (Loading/Error handling).
-- [ ] Kiểm tra lưu trữ file trên Supabase Storage.
+### TC-AD-01: Đăng nhập Admin
+- **Mục tiêu:** Xác minh admin đăng nhập và thấy đúng menu.
+- **Bước thực hiện:**
+  1. Đăng nhập `admin@test.edu.vn` / `Test1234@`
+- **Kết quả mong đợi:** Sidebar hiện đầy đủ: Kỳ xét duyệt, Tiêu chí, Lớp & Khoa, Hệ thống, Thống kê.
+
+### TC-AD-02: Quản lý kỳ xét duyệt
+- **Mục tiêu:** CRUD kỳ xét duyệt.
+- **Bước thực hiện:**
+  1. Click "Kỳ xét duyệt" → Thêm mới → Điền thông tin → Lưu
+  2. Sửa 1 kỳ → Lưu
+  3. Xóa 1 kỳ
+- **Kết quả mong đợi:** Các thao tác CRUD hoạt động chính xác.
+
+### TC-AD-03: Quản lý tiêu chí đánh giá
+- **Mục tiêu:** CRUD tiêu chí.
+- **Bước thực hiện:**
+  1. Click "Tiêu chí đánh giá" → Thêm/Sửa/Xóa tiêu chí
+- **Kết quả mong đợi:** Tiêu chí cập nhật đúng trong CSDL.
+
+### TC-AD-04: Quản lý Khoa/Lớp
+- **Mục tiêu:** CRUD Khoa và Lớp.
+- **Bước thực hiện:**
+  1. Click "Quản lý Lớp & Khoa" → Thêm/Sửa/Xóa
+- **Kết quả mong đợi:** Dữ liệu cập nhật đúng.
+
+---
+
+## 5. 🔄 Kịch bản Test Tích hợp (End-to-End)
+
+### TC-E2E-01: Luồng hoàn chỉnh: SV nộp → CB duyệt
+1. Đăng nhập SV → Cập nhật E-Profile → Tạo hồ sơ đăng ký → Nộp hồ sơ
+2. Đăng nhập CB → Xem danh sách → Mở chi tiết → Phê duyệt
+3. Đăng nhập lại SV → Kiểm tra hồ sơ đã chuyển sang "Đã duyệt"
+- **Kết quả mong đợi:** Toàn bộ luồng hoạt động mượt mà, dữ liệu đồng bộ chính xác giữa các vai trò.
+
+---
+
+*File này sẽ được cập nhật khi có thêm tính năng mới hoặc kịch bản test bổ sung.*
