@@ -7,7 +7,7 @@ const supabase = require('../config/db');
 exports.getAssignedApplications = async (req, res) => {
   try {
     const reviewerId = req.user.id;
-    const { trang_thai, search } = req.query;
+    const { trang_thai, search, lop_id } = req.query;
 
     // 1. Lấy danh sách lớp được phân công
     const { data: assignments, error: assignErr } = await supabase
@@ -24,10 +24,21 @@ exports.getAssignedApplications = async (req, res) => {
     const lopIds = assignments.map(a => a.lop_id);
 
     // 2. Lấy danh sách sinh viên thuộc các lớp đó
-    const { data: students, error: stuErr } = await supabase
+    let studentQuery = supabase
       .from('users')
-      .select('id')
-      .in('lop_id', lopIds);
+      .select('id');
+
+    if (lop_id && lop_id !== 'all') {
+      // Bảo mật: Kiểm tra xem lop_id có nằm trong danh sách được phân công không
+      if (!lopIds.includes(parseInt(lop_id))) {
+        return res.status(403).json({ success: false, error: 'Bạn không có quyền quản lý lớp này.' });
+      }
+      studentQuery = studentQuery.eq('lop_id', lop_id);
+    } else {
+      studentQuery = studentQuery.in('lop_id', lopIds);
+    }
+
+    const { data: students, error: stuErr } = await studentQuery;
 
     if (stuErr) throw stuErr;
 
@@ -292,6 +303,97 @@ exports.getAssignedClasses = async (req, res) => {
 
     if (error) throw error;
     res.json({ success: true, data: (data || []).map(a => a.lop_hoc) });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+// ──────────────────────────────────────────────────
+// ADMIN: Lấy tất cả phân công (Dành cho trang quản lý Admin)
+// ──────────────────────────────────────────────────
+exports.getAllAssignments = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('reviewer_assignments')
+      .select(`
+        id,
+        reviewer_id,
+        lop_id,
+        users!reviewer_id ( id, ho_ten, email, ma_sv ),
+        lop_hoc!lop_id ( id, ma_lop, ten_lop, khoa ( id, ten_khoa ) )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ──────────────────────────────────────────────────
+// ADMIN: Tạo phân công mới
+// ──────────────────────────────────────────────────
+exports.createAssignment = async (req, res) => {
+  try {
+    const { reviewer_id, lop_id } = req.body;
+    
+    // Kiểm tra xem đã tồn tại phân công này chưa
+    const { data: existing } = await supabase
+      .from('reviewer_assignments')
+      .select('id')
+      .eq('reviewer_id', reviewer_id)
+      .eq('lop_id', lop_id)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ success: false, error: 'Phân công này đã tồn tại.' });
+    }
+
+    const { data, error } = await supabase
+      .from('reviewer_assignments')
+      .insert([{ reviewer_id, lop_id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ──────────────────────────────────────────────────
+// ADMIN: Xóa phân công
+// ──────────────────────────────────────────────────
+exports.deleteAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { error } = await supabase
+      .from('reviewer_assignments')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Đã xóa phân công.' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ──────────────────────────────────────────────────
+// ADMIN: Lấy danh sách tất cả cán bộ
+// ──────────────────────────────────────────────────
+exports.getAllReviewers = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, ho_ten, email, ma_sv, role')
+      .eq('role', 'can_bo')
+      .eq('is_active', true)
+      .order('ho_ten');
+
+    if (error) throw error;
+    res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

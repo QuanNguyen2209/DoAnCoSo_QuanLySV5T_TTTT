@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CheckSquare, FolderOpen, Edit3, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, Users, User } from "lucide-react";
+import { Home, CheckSquare, FolderOpen, Edit3, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, Users, User, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/authStore";
@@ -33,6 +33,7 @@ export default function Sidebar() {
     { name: "Kỳ xét duyệt", icon: LayoutList, href: "/admin/periods", active: pathname === "/admin/periods" },
     { name: "Tiêu chí đánh giá", icon: Settings, href: "/admin/criteria", active: pathname === "/admin/criteria" },
     { name: "Quản lý Lớp & Khoa", icon: School, href: "/admin/classes", active: pathname === "/admin/classes" },
+    { name: "Phân công xét duyệt", icon: UserCheck, href: "/admin/assignments", active: pathname === "/admin/assignments" },
     { name: "Quản lý hệ thống", icon: Shield, href: "/admin/system", active: pathname === "/admin/system" },
     { name: "Thống kê hệ thống", icon: BarChart3, href: "/admin/statistics", active: pathname === "/admin/statistics" },
   ];

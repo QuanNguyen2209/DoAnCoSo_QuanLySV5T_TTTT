@@ -70,10 +70,17 @@ exports.getById = async (req, res) => {
 // POST /api/tieu-chi — Tạo tiêu chí (cha hoặc con)
 exports.create = async (req, res) => {
   try {
-    const { ten_tieu_chi, mo_ta, thu_tu, parent_id } = req.body;
+    const { ten_tieu_chi, mo_ta, thu_tu, parent_id, loai_doi_tuong } = req.body;
     const { data, error } = await supabase
       .from('tieu_chi')
-      .insert([{ ten_tieu_chi, mo_ta, thu_tu: thu_tu || 1, parent_id: parent_id || null, is_active: true }])
+      .insert([{ 
+        ten_tieu_chi, 
+        mo_ta, 
+        thu_tu: thu_tu || 1, 
+        parent_id: parent_id || null, 
+        loai_doi_tuong: loai_doi_tuong || 'individual',
+        is_active: true 
+      }])
       .select()
       .single();
 
@@ -87,12 +94,13 @@ exports.create = async (req, res) => {
 // PUT /api/tieu-chi/:id
 exports.update = async (req, res) => {
   try {
-    const { ten_tieu_chi, mo_ta, thu_tu, parent_id } = req.body;
+    const { ten_tieu_chi, mo_ta, thu_tu, parent_id, loai_doi_tuong } = req.body;
     const updateData = {};
     if (ten_tieu_chi !== undefined) updateData.ten_tieu_chi = ten_tieu_chi;
     if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
     if (thu_tu !== undefined) updateData.thu_tu = thu_tu;
     if (parent_id !== undefined) updateData.parent_id = parent_id;
+    if (loai_doi_tuong !== undefined) updateData.loai_doi_tuong = loai_doi_tuong;
 
     const { data, error } = await supabase
       .from('tieu_chi')

@@ -59,7 +59,7 @@ export interface ReviewStats {
 
 export const reviewerService = {
   // Lấy danh sách hồ sơ được phân công
-  getApplications: async (params?: { trang_thai?: string; search?: string }) => {
+  getApplications: async (params?: { trang_thai?: string; search?: string; lop_id?: string }) => {
     const response = await api.get<{ success: boolean; data: ReviewApplication[] }>('/reviewer/applications', { params });
     return response.data.data;
   },

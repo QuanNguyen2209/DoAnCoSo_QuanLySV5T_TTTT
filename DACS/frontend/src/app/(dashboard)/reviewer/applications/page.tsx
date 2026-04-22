@@ -7,14 +7,30 @@ import Link from "next/link";
 
 export default function ReviewerApplicationsPage() {
   const [applications, setApplications] = useState<ReviewApplication[]>([]);
+  const [assignedClasses, setAssignedClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("all");
+  const [selectedClass, setSelectedClass] = useState("all");
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  useEffect(() => {
     fetchApplications();
-  }, [filter]);
+  }, [filter, selectedClass]);
+
+  const fetchInitialData = async () => {
+    try {
+      const classes = await reviewerService.getAssignedClasses();
+      setAssignedClasses(classes || []);
+      await fetchApplications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchApplications = async () => {
     try {
@@ -22,6 +38,7 @@ export default function ReviewerApplicationsPage() {
       setError("");
       const params: any = {};
       if (filter !== "all") params.trang_thai = filter;
+      if (selectedClass !== "all") params.lop_id = selectedClass;
       if (search) params.search = search;
       const data = await reviewerService.getApplications(params);
       setApplications(data);
@@ -91,6 +108,18 @@ export default function ReviewerApplicationsPage() {
         <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <h2 className="font-bold text-slate-900 text-lg">Danh sách hồ sơ</h2>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Class Filter */}
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-100 transition-all min-w-[150px]"
+            >
+              <option value="all">Tất cả lớp quản lý</option>
+              {assignedClasses.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.ma_lop} - {cls.ten_lop}</option>
+              ))}
+            </select>
+
             {/* Status Filter Tabs */}
             {[
               { key: "all", label: "Tất cả" },
@@ -151,6 +180,7 @@ export default function ReviewerApplicationsPage() {
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Người nộp</th>
+                  <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Đơn vị (Lớp/Khoa)</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Danh hiệu</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Minh chứng</th>
                   <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-center">Trạng thái</th>
@@ -163,7 +193,15 @@ export default function ReviewerApplicationsPage() {
                     <td className="px-6 py-5">
                       <span className="font-bold text-slate-900 text-sm block">{app.users?.ho_ten || "—"}</span>
                       <span className="text-[10px] font-bold text-slate-400 tracking-wide">
-                        {app.users?.lop_hoc?.ma_lop || ""} • {app.users?.ma_sv || ""} • #{app.ma_ho_so}
+                        MSSV: {app.users?.ma_sv || ""} • #{app.ma_ho_so}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg text-xs block w-fit mb-1">
+                        {app.users?.lop_hoc?.ma_lop || "—"}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                        Khoa {app.users?.lop_hoc?.khoa?.ten_khoa || "—"}
                       </span>
                     </td>
                     <td className="px-6 py-5">

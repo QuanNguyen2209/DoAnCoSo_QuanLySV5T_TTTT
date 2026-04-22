@@ -30,12 +30,12 @@ const colorMap: Record<number, { bg: string; text: string; border: string; light
 export default function CriteriaManagementPage() {
   const [tree, setTree] = useState<TieuChi[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tabType, setTabType] = useState<"sv5t" | "tttt">("sv5t");
+  const [tabType, setTabType] = useState<"individual" | "collective">("individual");
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<TieuChi | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ ten_tieu_chi: "", mo_ta: "", thu_tu: 1, parent_id: null as number | null, loai_doi_tuong: "sv5t" });
+  const [form, setForm] = useState({ ten_tieu_chi: "", mo_ta: "", thu_tu: 1, parent_id: null as number | null, loai_doi_tuong: "individual" });
   const [parentLabel, setParentLabel] = useState("");
 
   const fetchCriteria = useCallback(async () => {
@@ -114,12 +114,12 @@ export default function CriteriaManagementPage() {
           <p className="text-slate-500 font-medium mt-1">Cấu trúc bộ tiêu chuẩn xét duyệt sinh viên</p>
         </div>
         <div className="flex gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
-          <button onClick={() => setTabType("sv5t")} 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${tabType === "sv5t" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+          <button onClick={() => setTabType("individual")} 
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${tabType === "individual" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             <Award className="w-4 h-4" /> Sinh viên 5 Tốt
           </button>
-          <button onClick={() => setTabType("tttt")} 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${tabType === "tttt" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+          <button onClick={() => setTabType("collective")} 
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${tabType === "collective" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             <Building className="w-4 h-4" /> Tập thể Tiên tiến
           </button>
         </div>
@@ -127,7 +127,7 @@ export default function CriteriaManagementPage() {
 
       <div className="flex items-center justify-between mt-4">
         <p className="text-slate-600 font-bold">
-          Bộ tiêu chuẩn <span className="text-indigo-600">{tabType === "sv5t" ? "Sinh viên 5 Tốt" : "Tập thể Tiên tiến"}</span> — {tree.length} tiêu chuẩn lớn, {totalChildren} tiêu chí con
+          Bộ tiêu chuẩn <span className="text-indigo-600">{tabType === "individual" ? "Sinh viên 5 Tốt" : "Tập thể Tiên tiến"}</span> — {tree.length} tiêu chuẩn lớn, {totalChildren} tiêu chí con
         </p>
         <button onClick={openCreateParent} className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 w-fit">
           <Plus className="w-5 h-5" /> Thêm tiêu chuẩn
@@ -154,7 +154,7 @@ export default function CriteriaManagementPage() {
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 text-indigo-500 animate-spin" /></div>
       ) : tree.length === 0 ? (
         <div className="text-center py-20 text-slate-400 font-medium bg-slate-50 rounded-3xl border border-slate-200">
-          Chưa có tiêu chí nào cho {tabType === "sv5t" ? "Sinh viên 5 Tốt" : "Tập thể Tiên tiến"}
+          Chưa có tiêu chí nào cho {tabType === "individual" ? "Sinh viên 5 Tốt" : "Tập thể Tiên tiến"}
         </div>
       ) : (
         <div className="space-y-6">

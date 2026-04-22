@@ -40,7 +40,17 @@ exports.getProfile = async (req, res) => {
 exports.upsertProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const profileInput = req.body; // chứa các trường dữ liệu
+    const { lop_id, ...profileInput } = req.body; // Tách lop_id ra nếu có
+
+    // Nếu có lop_id, cập nhật bảng users trước
+    if (lop_id) {
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ lop_id })
+        .eq('id', userId);
+      
+      if (userUpdateError) throw userUpdateError;
+    }
 
     // 1. Kiểm tra xem profile đã tồn tại chưa
     const { data: existingProfile, error: checkError } = await supabase

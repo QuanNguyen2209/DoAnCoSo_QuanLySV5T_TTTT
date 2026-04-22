@@ -2,11 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { profileService, FullProfileData, UserProfile } from "@/services/profileService";
-import { Save, User, Phone, BookOpen, Briefcase, Flag, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Save, User, Phone, BookOpen, Briefcase, Flag, Loader2, AlertCircle, CheckCircle2, School } from "lucide-react";
+import api from "@/lib/axios";
 
 export default function EProfilePage() {
   const [data, setData] = useState<FullProfileData | null>(null);
   const [formData, setFormData] = useState<UserProfile>({});
+  const [khoas, setKhoas] = useState<any[]>([]);
+  const [allClasses, setAllClasses] = useState<any[]>([]);
+  const [selectedKhoa, setSelectedKhoa] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -19,9 +23,22 @@ export default function EProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const res = await profileService.getMe();
-      setData(res);
-      setFormData(res.profile || {});
+      const [profileRes, khoaRes, classRes] = await Promise.all([
+        profileService.getMe(),
+        api.get("/khoa"),
+        api.get("/lop-hoc")
+      ]);
+      
+      setData(profileRes);
+      setFormData(profileRes.profile || {});
+      
+      if (khoaRes.data.success) setKhoas(khoaRes.data.data);
+      if (classRes.data.success) setAllClasses(classRes.data.data);
+
+      // Nếu đã có lớp, set khoa tương ứng
+      if (profileRes.user?.lop_hoc?.khoa?.id) {
+        setSelectedKhoa(profileRes.user.lop_hoc.khoa.id.toString());
+      }
     } catch (err: any) {
       setError("Không thể tải thông tin hồ sơ. Vui lòng thử lại.");
     } finally {
@@ -40,8 +57,16 @@ export default function EProfilePage() {
       setSaving(true);
       setError("");
       setSuccess(false);
-      const updatedProfile = await profileService.updateMe(formData);
-      setFormData(updatedProfile);
+      
+      // Đảm bảo lop_id được gửi dưới dạng số nếu có
+      const submissionData = { ...formData };
+      if (submissionData.lop_id) submissionData.lop_id = Number(submissionData.lop_id);
+
+      await profileService.updateMe(submissionData);
+      
+      // Tải lại toàn bộ thông tin để cập nhật UI (bao gồm cả data.user.lop_hoc mới)
+      await fetchProfile();
+      
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
@@ -112,7 +137,7 @@ export default function EProfilePage() {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Giới tính</label>
-              <select name="gioi_tinh" value={formData.gioi_tinh || ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+              <select name="gioi_tinh" value={formData.gioi_tinh || ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                 <option value="">Chọn giới tính</option>
                 <option value="Nam">Nam</option>
                 <option value="Nữ">Nữ</option>
@@ -121,19 +146,19 @@ export default function EProfilePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Ngày sinh</label>
-              <input type="date" name="ngay_sinh" value={formData.ngay_sinh ? formData.ngay_sinh.split('T')[0] : ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="date" name="ngay_sinh" value={formData.ngay_sinh ? formData.ngay_sinh.split('T')[0] : ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Dân tộc</label>
-              <input type="text" name="dan_toc" value={formData.dan_toc || ""} onChange={handleInputChange} placeholder="VD: Kinh" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="text" name="dan_toc" value={formData.dan_toc || ""} onChange={handleInputChange} placeholder="VD: Kinh" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Tôn giáo</label>
-              <input type="text" name="ton_giao" value={formData.ton_giao || ""} onChange={handleInputChange} placeholder="VD: Không" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="text" name="ton_giao" value={formData.ton_giao || ""} onChange={handleInputChange} placeholder="VD: Không" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">Địa chỉ thường trú</label>
-              <input type="text" name="dia_chi_thuong_tru" value={formData.dia_chi_thuong_tru || ""} onChange={handleInputChange} placeholder="Nhập địa chỉ đầy đủ" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="text" name="dia_chi_thuong_tru" value={formData.dia_chi_thuong_tru || ""} onChange={handleInputChange} placeholder="Nhập địa chỉ đầy đủ" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
           </div>
         </section>
@@ -147,18 +172,49 @@ export default function EProfilePage() {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Số điện thoại</label>
-              <input type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || ""} onChange={handleInputChange} placeholder="09xxxxxxxxx" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="tel" name="so_dien_thoai" value={formData.so_dien_thoai || ""} onChange={handleInputChange} placeholder="09xxxxxxxxx" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Email (Tài khoản)</label>
               <input type="email" value={data.user?.email || ""} readOnly className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 outline-none" />
             </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Lớp / Khoa quản lý</label>
-              <div className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 outline-none flex gap-2">
-                <span className="font-medium text-slate-800">{data.user?.lop_hoc?.ma_lop || "Chưa có"}</span>
-                <span className="text-slate-400">|</span>
-                <span>{data.user?.lop_hoc?.khoa?.ten_khoa || "Chưa có"}</span>
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Khoa / Viện quản lý</label>
+                <select 
+                  value={selectedKhoa} 
+                  onChange={(e) => {
+                    setSelectedKhoa(e.target.value);
+                    setFormData(prev => ({ ...prev, lop_id: undefined })); // Reset lớp khi đổi khoa
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-white shadow-sm"
+                >
+                  <option value="">-- Chọn Khoa/Viện --</option>
+                  {khoas.map(k => (
+                    <option key={k.id} value={k.id}>{k.ten_khoa}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Lớp sinh hoạt</label>
+                <select 
+                  name="lop_id"
+                  value={formData.lop_id || data.user?.lop_id || ""} 
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none bg-white shadow-sm"
+                >
+                  <option value="">-- Chọn Lớp --</option>
+                  {allClasses
+                    .filter(c => !selectedKhoa || c.khoa_id?.toString() === selectedKhoa)
+                    .map(c => (
+                      <option key={c.id} value={c.id}>{c.ma_lop} - {c.ten_lop}</option>
+                    ))
+                  }
+                </select>
+              </div>
+              <div className="md:col-span-2 flex items-center gap-2 text-[10px] text-amber-600 font-bold px-1">
+                <AlertCircle className="w-3 h-3" />
+                <span>Vui lòng chọn đúng Lớp để Cán bộ có thể thấy và xét duyệt hồ sơ của bạn.</span>
               </div>
             </div>
           </div>
@@ -173,11 +229,11 @@ export default function EProfilePage() {
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Năm học</label>
-              <input type="text" name="nam_hoc" value={formData.nam_hoc || ""} onChange={handleInputChange} placeholder="VD: 2022-2026" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+              <input type="text" name="nam_hoc" value={formData.nam_hoc || ""} onChange={handleInputChange} placeholder="VD: 2022-2026" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Trình độ đào tạo</label>
-              <select name="trinh_do_dao_tao" value={formData.trinh_do_dao_tao || ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+              <select name="trinh_do_dao_tao" value={formData.trinh_do_dao_tao || ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                 <option value="">Chọn trình độ</option>
                 <option value="Đại học chính quy">Đại học chính quy</option>
                 <option value="Cao đẳng">Cao đẳng</option>
@@ -191,15 +247,15 @@ export default function EProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Điểm tích lũy (GPA)</label>
-                  <input type="number" step="0.01" max="4.0" name="diem_tich_luy" value={formData.diem_tich_luy || ""} onChange={handleInputChange} placeholder="Hệ 4.0 (VD: 3.2)" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                  <input type="number" step="0.01" max="4.0" name="diem_tich_luy" value={formData.diem_tich_luy || ""} onChange={handleInputChange} placeholder="Hệ 4.0 (VD: 3.2)" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Điểm rèn luyện</label>
-                  <input type="number" max="100" name="diem_ren_luyen" value={formData.diem_ren_luyen || ""} onChange={handleInputChange} placeholder="Thang điểm 100" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                  <input type="number" max="100" name="diem_ren_luyen" value={formData.diem_ren_luyen || ""} onChange={handleInputChange} placeholder="Thang điểm 100" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-slate-700 mb-2">Link minh chứng (Học tập/Rèn luyện)</label>
-                  <input type="url" name="minh_chung_hoc_tap" value={formData.minh_chung_hoc_tap || ""} onChange={handleInputChange} placeholder="Link Google Drive / OneDrive chụp bảng điểm..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
+                  <input type="url" name="minh_chung_hoc_tap" value={formData.minh_chung_hoc_tap || ""} onChange={handleInputChange} placeholder="Link Google Drive / OneDrive chụp bảng điểm..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
                 </div>
               </div>
             </div>
@@ -208,18 +264,18 @@ export default function EProfilePage() {
             <div className="md:col-span-2 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Lý luận chính trị</label>
-                <input type="text" name="ly_luan_chinh_tri" value={formData.ly_luan_chinh_tri || ""} onChange={handleInputChange} placeholder="VD: Sơ cấp lý luận chính trị, Lớp nhận thức về Đảng..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                <input type="text" name="ly_luan_chinh_tri" value={formData.ly_luan_chinh_tri || ""} onChange={handleInputChange} placeholder="VD: Sơ cấp lý luận chính trị, Lớp nhận thức về Đảng..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Ngoại ngữ</label>
-                  <input type="text" name="ngoai_ngu" value={formData.ngoai_ngu || ""} onChange={handleInputChange} placeholder="VD: IELTS 6.5, TOEIC 700..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-2" />
+                  <input type="text" name="ngoai_ngu" value={formData.ngoai_ngu || ""} onChange={handleInputChange} placeholder="VD: IELTS 6.5, TOEIC 700..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-2" />
                   <input type="url" name="minh_chung_ngoai_ngu" value={formData.minh_chung_ngoai_ngu || ""} onChange={handleInputChange} placeholder="Link minh chứng chứng chỉ" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm bg-slate-50" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Tin học</label>
-                  <input type="text" name="tin_hoc" value={formData.tin_hoc || ""} onChange={handleInputChange} placeholder="VD: IC3, MOS, CNTT Cơ bản..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-2" />
+                  <input type="text" name="tin_hoc" value={formData.tin_hoc || ""} onChange={handleInputChange} placeholder="VD: IC3, MOS, CNTT Cơ bản..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-2" />
                   <input type="url" name="minh_chung_tin_hoc" value={formData.minh_chung_tin_hoc || ""} onChange={handleInputChange} placeholder="Link minh chứng chứng chỉ" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm bg-slate-50" />
                 </div>
               </div>
@@ -236,7 +292,7 @@ export default function EProfilePage() {
             </div>
             <div className="p-6 flex-1">
               <label className="block text-sm font-medium text-slate-700 mb-2">Chức vụ Đoàn - Hội (Đang đảm nhiệm)</label>
-              <textarea name="chuc_vu_doan_hoi" value={formData.chuc_vu_doan_hoi || ""} onChange={handleInputChange} rows={5} placeholder="Ví dụ: Bí thư Chi đoàn CNTT01, Lớp trưởng..." className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"></textarea>
+              <textarea name="chuc_vu_doan_hoi" value={formData.chuc_vu_doan_hoi || ""} onChange={handleInputChange} rows={5} placeholder="Ví dụ: Bí thư Chi đoàn CNTT01, Lớp trưởng..." className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"></textarea>
             </div>
           </section>
 
@@ -249,15 +305,15 @@ export default function EProfilePage() {
             <div className="p-6 space-y-4 flex-1">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Đơn vị Đoàn trực thuộc</label>
-                <input type="text" name="don_vi_doan_truc_thuoc" value={formData.don_vi_doan_truc_thuoc || ""} onChange={handleInputChange} placeholder="VD: Đoàn khoa CNTT" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                <input type="text" name="don_vi_doan_truc_thuoc" value={formData.don_vi_doan_truc_thuoc || ""} onChange={handleInputChange} placeholder="VD: Đoàn khoa CNTT" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Ngày kết nạp Đoàn</label>
-                <input type="date" name="ngay_ket_nap_doan" value={formData.ngay_ket_nap_doan ? formData.ngay_ket_nap_doan.split('T')[0] : ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                <input type="date" name="ngay_ket_nap_doan" value={formData.ngay_ket_nap_doan ? formData.ngay_ket_nap_doan.split('T')[0] : ""} onChange={handleInputChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Thông tin chính trị khác</label>
-                <input type="text" name="thong_tin_chinh_tri" value={formData.thong_tin_chinh_tri || ""} onChange={handleInputChange} placeholder="VD: Đảng viên dự bị..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
+                <input type="text" name="thong_tin_chinh_tri" value={formData.thong_tin_chinh_tri || ""} onChange={handleInputChange} placeholder="VD: Đảng viên dự bị..." className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
               </div>
             </div>
           </section>

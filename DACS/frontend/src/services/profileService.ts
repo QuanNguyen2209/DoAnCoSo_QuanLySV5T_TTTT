@@ -23,6 +23,7 @@ export interface UserProfile {
   don_vi_doan_truc_thuoc?: string;
   ngay_ket_nap_doan?: string;
   thong_tin_chinh_tri?: string;
+  lop_id?: number;
 }
 
 export interface FullProfileData {
@@ -32,13 +33,16 @@ export interface FullProfileData {
     email: string;
     ma_sv: string;
     avatar_url: string;
+    lop_id: number | null;
     lop_hoc: {
+      id: number;
       ma_lop: string;
       ten_lop: string;
       khoa: {
+        id: number;
         ten_khoa: string;
       };
-    };
+    } | null;
   };
   profile: UserProfile;
 }

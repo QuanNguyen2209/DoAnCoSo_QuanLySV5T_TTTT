@@ -21,4 +21,10 @@ router.get('/stats', ctrl.getStats);
 // Danh sách lớp được phân công
 router.get('/assigned-classes', ctrl.getAssignedClasses);
 
+// --- ADMIN ROUTES ---
+router.get('/admin/all-assignments', ctrl.getAllAssignments);
+router.get('/admin/reviewers', ctrl.getAllReviewers);
+router.post('/admin/assignments', ctrl.createAssignment);
+router.delete('/admin/assignments/:id', ctrl.deleteAssignment);
+
 module.exports = router;
