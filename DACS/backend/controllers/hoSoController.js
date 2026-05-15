@@ -67,7 +67,7 @@ exports.getById = async (req, res) => {
 // POST /api/ho-so — Tạo hồ sơ mới (bản nháp)
 exports.create = async (req, res) => {
   try {
-    const { sinh_vien_id, ky_xet_duyet_id, loai_doi_tuong, ghi_chu_sv } = req.body;
+    const { sinh_vien_id, ky_xet_duyet_id, loai_doi_tuong, ghi_chu_sv, cap_xet_duyet } = req.body;
 
     const ma_ho_so = await generateMaHoSo();
 
@@ -79,6 +79,7 @@ exports.create = async (req, res) => {
         ky_xet_duyet_id,
         loai_doi_tuong,
         ghi_chu_sv,
+        cap_xet_duyet: cap_xet_duyet || 'khoa',
         trang_thai: 'draft',
       }])
       .select()

@@ -43,12 +43,6 @@ export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState("student");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [forgotMode, setForgotMode] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotMessage, setForgotMessage] = useState("");
-  const [forgotLoading, setForgotLoading] = useState(false);
-
-  const { forgotPassword } = useAuthStore();
 
   const roles = [
     { id: 'student', title: 'Sinh viên', icon: <User className="w-5 h-5 mb-1" /> },
@@ -89,19 +83,7 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotLoading(true);
-    setForgotMessage("");
 
-    const result = await forgotPassword(forgotEmail);
-    if (result.success) {
-      setForgotMessage(result.message || "Kiểm tra email của bạn!");
-    } else {
-      setForgotMessage(result.error || "Đã xảy ra lỗi");
-    }
-    setForgotLoading(false);
-  };
 
   return (
     <div className="min-h-screen bg-white flex w-full font-sans">
@@ -127,47 +109,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Modal Quên mật khẩu */}
-        {forgotMode ? (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-5"
-          >
-            <h2 className="text-xl font-bold text-slate-800">Quên mật khẩu?</h2>
-            <p className="text-sm text-slate-500">Nhập email để nhận hướng dẫn đặt lại mật khẩu.</p>
-
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <input
-                type="email"
-                placeholder="Email của bạn"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3.5 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-medium"
-                required
-              />
-              {forgotMessage && (
-                <p className="text-sm font-medium text-green-600 bg-green-50 p-3 rounded-xl">{forgotMessage}</p>
-              )}
-              <button
-                type="submit"
-                disabled={forgotLoading}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 rounded-full transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {forgotLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                Gửi yêu cầu
-              </button>
-            </form>
-
-            <button
-              onClick={() => { setForgotMode(false); setForgotMessage(""); }}
-              className="text-sm font-bold text-blue-600 hover:text-blue-700"
-            >
-              ← Quay lại đăng nhập
-            </button>
-          </motion.div>
-        ) : (
-          <>
             {/* Chọn vai trò */}
             <div className="grid grid-cols-4 gap-3 mb-8">
               {roles.map((role) => (
@@ -216,13 +157,12 @@ export default function LoginPage() {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-bold text-slate-700">Mật khẩu</label>
-                  <button
-                    type="button"
-                    onClick={() => setForgotMode(true)}
+                  <Link
+                    href="/forgot-password"
                     className="text-xs font-bold text-blue-600 hover:text-blue-700"
                   >
                     Quên mật khẩu?
-                  </button>
+                  </Link>
                 </div>
                 <div className="relative">
                   <input
@@ -295,9 +235,6 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-          </>
-        )}
-
       </div>
 
       {/* Cột phải: Background Image & Card */}

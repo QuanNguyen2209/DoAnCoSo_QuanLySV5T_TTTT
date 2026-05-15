@@ -50,4 +50,9 @@ export const authService = {
     const response = await api.post<{ success: boolean; message: string }>('/auth/forgot-password', { email });
     return response.data;
   },
+
+  resetPassword: async (payload: { email: string; otp: string; newPassword: string }) => {
+    const response = await api.post<{ success: boolean; message: string }>('/auth/reset-password', payload);
+    return response.data;
+  },
 };

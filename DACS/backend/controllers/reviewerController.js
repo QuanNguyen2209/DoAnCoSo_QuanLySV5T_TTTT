@@ -1,4 +1,5 @@
 const supabase = require('../config/db');
+const nodemailer = require('nodemailer');
 
 // ──────────────────────────────────────────────────
 // GET /api/reviewer/applications
@@ -396,5 +397,77 @@ exports.getAllReviewers = async (req, res) => {
     res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ──────────────────────────────────────────────────
+// POST /api/reviewer/applications/:id/send-email
+// Gửi email cho sinh viên từ cán bộ chấm điểm
+// ──────────────────────────────────────────────────
+exports.sendEmailToStudent = async (req, res) => {
+  try {
+    const hoSoId = req.params.id;
+    const reviewerId = req.user.id;
+    const { subject, message } = req.body;
+
+    if (!subject || !message) {
+      return res.status(400).json({ success: false, error: 'Vui lòng nhập tiêu đề và nội dung email.' });
+    }
+
+    // 1. Lấy thông tin hồ sơ và sinh viên
+    const { data: hoSo, error: hsErr } = await supabase
+      .from('ho_so')
+      .select(`
+        id, sinh_vien_id,
+        users!ho_so_sinh_vien_id_fkey ( id, email, ho_ten )
+      `)
+      .eq('id', hoSoId)
+      .single();
+
+    if (hsErr || !hoSo) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ.' });
+    }
+
+    const studentEmail = hoSo.users?.email;
+    if (!studentEmail) {
+      return res.status(400).json({ success: false, error: 'Sinh viên này chưa cập nhật email.' });
+    }
+
+    // 2. Cấu hình Nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // 3. Nội dung email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: studentEmail,
+      subject: `[Thông báo Hệ thống SV5T] ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #4f46e5;">Thông báo từ Cán bộ xét duyệt</h2>
+          <p>Chào bạn <strong>${hoSo.users?.ho_ten || 'Sinh viên'}</strong>,</p>
+          <p>Bạn nhận được một yêu cầu/thông báo về hồ sơ ứng tuyển từ Cán bộ xét duyệt:</p>
+          <div style="background-color: #f8fafc; border-left: 4px solid #4f46e5; padding: 15px; margin: 15px 0; border-radius: 4px;">
+            ${message.replace(/\n/g, '<br/>')}
+          </div>
+          <p>Vui lòng đăng nhập vào hệ thống để kiểm tra và thực hiện bổ sung nếu cần.</p>
+          <br/>
+          <p style="font-size: 12px; color: #64748b;">Đây là email tự động, vui lòng không phản hồi.</p>
+        </div>
+      `
+    };
+
+    // 4. Gửi email
+    await transporter.sendMail(mailOptions);
+
+    res.json({ success: true, message: 'Đã gửi email thành công tới sinh viên.' });
+  } catch (err) {
+    console.error('Lỗi sendEmailToStudent:', err);
+    res.status(500).json({ success: false, error: 'Lỗi gửi email: ' + err.message });
   }
 };

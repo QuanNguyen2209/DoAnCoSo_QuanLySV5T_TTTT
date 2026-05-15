@@ -13,6 +13,7 @@ interface TieuChi {
   parent_id: number | null;
   is_active: boolean;
   loai_doi_tuong: string;
+  bat_buoc: boolean;
   children?: TieuChi[];
 }
 
@@ -35,7 +36,7 @@ export default function CriteriaManagementPage() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<TieuChi | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ ten_tieu_chi: "", mo_ta: "", thu_tu: 1, parent_id: null as number | null, loai_doi_tuong: "individual" });
+  const [form, setForm] = useState({ ten_tieu_chi: "", mo_ta: "", thu_tu: 1, parent_id: null as number | null, loai_doi_tuong: "individual", bat_buoc: false });
   const [parentLabel, setParentLabel] = useState("");
 
   const fetchCriteria = useCallback(async () => {
@@ -59,7 +60,7 @@ export default function CriteriaManagementPage() {
   // Thêm tiêu chí lớn (cha)
   const openCreateParent = () => {
     setEditing(null);
-    setForm({ ten_tieu_chi: "", mo_ta: "", thu_tu: tree.length + 1, parent_id: null, loai_doi_tuong: tabType });
+    setForm({ ten_tieu_chi: "", mo_ta: "", thu_tu: tree.length + 1, parent_id: null, loai_doi_tuong: tabType, bat_buoc: false });
     setParentLabel("");
     setShowModal(true);
   };
@@ -67,7 +68,7 @@ export default function CriteriaManagementPage() {
   // Thêm tiêu chí nhỏ (con)
   const openCreateChild = (parent: TieuChi) => {
     setEditing(null);
-    setForm({ ten_tieu_chi: "", mo_ta: "", thu_tu: (parent.children?.length || 0) + 1, parent_id: parent.id, loai_doi_tuong: tabType });
+    setForm({ ten_tieu_chi: "", mo_ta: "", thu_tu: (parent.children?.length || 0) + 1, parent_id: parent.id, loai_doi_tuong: tabType, bat_buoc: false });
     setParentLabel(parent.ten_tieu_chi);
     setShowModal(true);
   };
@@ -75,7 +76,7 @@ export default function CriteriaManagementPage() {
   // Sửa
   const openEdit = (tc: TieuChi, parentName?: string) => {
     setEditing(tc);
-    setForm({ ten_tieu_chi: tc.ten_tieu_chi, mo_ta: tc.mo_ta || "", thu_tu: tc.thu_tu, parent_id: tc.parent_id, loai_doi_tuong: tc.loai_doi_tuong });
+    setForm({ ten_tieu_chi: tc.ten_tieu_chi, mo_ta: tc.mo_ta || "", thu_tu: tc.thu_tu, parent_id: tc.parent_id, loai_doi_tuong: tc.loai_doi_tuong, bat_buoc: tc.bat_buoc });
     setParentLabel(parentName || "");
     setShowModal(true);
   };
@@ -211,7 +212,10 @@ export default function CriteriaManagementPage() {
                             {parent.thu_tu}.{child.thu_tu}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-slate-800 text-sm">{child.ten_tieu_chi}</p>
+                            <p className="font-bold text-slate-800 text-sm">
+                              {child.ten_tieu_chi}
+                              {child.bat_buoc && <span className="text-rose-600 ml-1">(*)</span>}
+                            </p>
                             {child.mo_ta && <p className="text-xs text-slate-500 truncate">{child.mo_ta}</p>}
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -283,6 +287,13 @@ export default function CriteriaManagementPage() {
                   <label className="block text-sm font-bold text-slate-700 mb-1">Thứ tự</label>
                   <input type="number" min={1} value={form.thu_tu} onChange={e => setForm({ ...form, thu_tu: parseInt(e.target.value) || 1 })}
                     className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:border-indigo-500 outline-none" />
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <input type="checkbox" id="bat_buoc" checked={form.bat_buoc} onChange={e => setForm({ ...form, bat_buoc: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  <label htmlFor="bat_buoc" className="text-sm font-bold text-rose-600 cursor-pointer">
+                    Đây là tiêu chí bắt buộc (*)
+                  </label>
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-8">

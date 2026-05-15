@@ -16,6 +16,7 @@ export default function StudentRegisterPage() {
   // Form State
   const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null);
   const [loaiDoiTuong, setLoaiDoiTuong] = useState("individual");
+  const [capXetDuyet, setCapXetDuyet] = useState("khoa");
   const [ghiChu, setGhiChu] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +52,8 @@ export default function StudentRegisterPage() {
         sinh_vien_id: user?.id,
         ky_xet_duyet_id: selectedPeriod,
         loai_doi_tuong: loaiDoiTuong,
-        ghi_chu_sv: ghiChu
+        ghi_chu_sv: ghiChu,
+        cap_xet_duyet: capXetDuyet
       });
 
       if (res.data.success) {
@@ -159,6 +161,34 @@ export default function StudentRegisterPage() {
                     <p className="text-sm text-slate-400">Chỉ dành cho Lớp trưởng</p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Chọn Cấp xét duyệt */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-3">Cấp xét duyệt</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button onClick={() => setCapXetDuyet("khoa")}
+                  className={`flex flex-col gap-2 p-5 rounded-2xl border-2 text-left transition-all ${
+                    capXetDuyet === "khoa" ? "border-indigo-600 bg-indigo-50" : "border-slate-200 hover:border-slate-300"
+                  }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">Cấp Khoa</span>
+                    {capXetDuyet === "khoa" && <CheckSquare className="w-5 h-5 text-indigo-600" />}
+                  </div>
+                  <p className="text-sm text-slate-500">Hồ sơ sẽ được xét duyệt ở cấp Khoa</p>
+                </button>
+
+                <button onClick={() => setCapXetDuyet("truong")}
+                  className={`flex flex-col gap-2 p-5 rounded-2xl border-2 text-left transition-all ${
+                    capXetDuyet === "truong" ? "border-rose-500 bg-rose-50" : "border-slate-200 hover:border-slate-300"
+                  }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-900">Cấp Trường</span>
+                    {capXetDuyet === "truong" && <CheckSquare className="w-5 h-5 text-rose-600" />}
+                  </div>
+                  <p className="text-sm text-slate-500">Hồ sơ sẽ được xét duyệt ở cấp Trường</p>
+                </button>
               </div>
             </div>
 

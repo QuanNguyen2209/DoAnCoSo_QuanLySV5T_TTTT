@@ -89,5 +89,14 @@ export const reviewerService = {
   getAssignedClasses: async () => {
     const response = await api.get<{ success: boolean; data: any[] }>('/reviewer/assigned-classes');
     return response.data.data;
+  },
+
+  // Gửi email cho sinh viên
+  sendEmail: async (id: number, subject: string, message: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/reviewer/applications/${id}/send-email`, {
+      subject,
+      message
+    });
+    return response.data;
   }
 };

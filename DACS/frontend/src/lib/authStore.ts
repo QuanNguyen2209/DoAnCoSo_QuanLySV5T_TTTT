@@ -12,6 +12,7 @@ interface AuthState {
   logout: () => void;
   checkAuth: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -79,6 +80,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   forgotPassword: async (email) => {
     try {
       const result = await authService.forgotPassword(email);
+      return { success: result.success, message: result.message };
+    } catch (err: any) {
+      const message = err.response?.data?.error || 'Đã xảy ra lỗi';
+      return { success: false, error: message };
+    }
+  },
+
+  resetPassword: async (email, otp, newPassword) => {
+    try {
+      const result = await authService.resetPassword({ email, otp, newPassword });
       return { success: result.success, message: result.message };
     } catch (err: any) {
       const message = err.response?.data?.error || 'Đã xảy ra lỗi';

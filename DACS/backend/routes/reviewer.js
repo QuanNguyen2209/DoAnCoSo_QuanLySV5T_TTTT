@@ -15,6 +15,9 @@ router.get('/applications/:id', ctrl.getApplicationDetail);
 // Duyệt/Từ chối hồ sơ
 router.put('/applications/:id/review', ctrl.reviewApplication);
 
+// Gửi email cho sinh viên
+router.post('/applications/:id/send-email', ctrl.sendEmailToStudent);
+
 // Thống kê
 router.get('/stats', ctrl.getStats);
 

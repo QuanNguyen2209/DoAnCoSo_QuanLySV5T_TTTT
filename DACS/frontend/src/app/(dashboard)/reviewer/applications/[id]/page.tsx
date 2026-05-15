@@ -6,7 +6,7 @@ import { reviewerService } from "@/services/reviewerService";
 import {
   ArrowLeft, User, Phone, BookOpen, Briefcase, Flag,
   CheckCircle2, XCircle, Loader2, FileText, ExternalLink,
-  Clock, AlertCircle, Shield
+  Clock, AlertCircle, Shield, Mail, Send
 } from "lucide-react";
 
 export default function ReviewApplicationDetailPage() {
@@ -18,7 +18,8 @@ export default function ReviewApplicationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [showModal, setShowModal] = useState<"approved" | "rejected" | null>(null);
+  const [showModal, setShowModal] = useState<"approved" | "rejected" | "email" | null>(null);
+  const [emailSubject, setEmailSubject] = useState("");
   const [resultMsg, setResultMsg] = useState("");
 
   useEffect(() => {
@@ -41,13 +42,35 @@ export default function ReviewApplicationDetailPage() {
     if (!showModal) return;
     try {
       setReviewing(true);
-      const res = await reviewerService.reviewApplication(id, showModal, feedback);
+      const res = await reviewerService.reviewApplication(id, showModal as any, feedback);
       setResultMsg(res.message);
       setShowModal(null);
       setFeedback("");
       fetchDetail(); // reload
     } catch {
       setResultMsg("Lỗi khi xử lý hồ sơ.");
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailSubject.trim() || !feedback.trim()) {
+      setResultMsg("Vui lòng nhập cả tiêu đề và nội dung email.");
+      return;
+    }
+    try {
+      setReviewing(true);
+      const res = await reviewerService.sendEmail(id, emailSubject, feedback);
+      setResultMsg(res.message || "Gửi email thành công.");
+      setTimeout(() => {
+        setShowModal(null);
+        setFeedback("");
+        setEmailSubject("");
+        setResultMsg("");
+      }, 2000);
+    } catch (err: any) {
+      setResultMsg(err.response?.data?.error || "Lỗi khi gửi email.");
     } finally {
       setReviewing(false);
     }
@@ -84,10 +107,15 @@ export default function ReviewApplicationDetailPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 pb-20">
-      {/* Back Button */}
-      <button onClick={() => router.push("/reviewer/applications")} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Quay lại danh sách
-      </button>
+      {/* Back Button & Actions */}
+      <div className="flex items-center justify-between">
+        <button onClick={() => router.push("/reviewer/applications")} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Quay lại danh sách
+        </button>
+        <button onClick={() => { setShowModal("email"); setFeedback(""); setEmailSubject(""); setResultMsg(""); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all text-sm">
+          <Mail className="w-4 h-4" /> Gửi Email cho SV
+        </button>
+      </div>
 
       {/* Header Card */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -273,23 +301,34 @@ export default function ReviewApplicationDetailPage() {
         </div>
       )}
 
-      {/* Modal phản hồi */}
+      {/* Modal phản hồi & Email */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
             <h2 className="text-xl font-bold text-slate-900 mb-2">
-              {showModal === "approved" ? "Xác nhận Phê duyệt" : "Xác nhận Từ chối"}
+              {showModal === "approved" ? "Xác nhận Phê duyệt" : showModal === "rejected" ? "Xác nhận Từ chối" : "Gửi Email cho Sinh viên"}
             </h2>
             <p className="text-sm text-slate-500 mb-6">
               {showModal === "approved"
                 ? "Bạn có chắc chắn phê duyệt hồ sơ này không?"
-                : "Vui lòng nhập lý do từ chối hoặc yêu cầu bổ sung."}
+                : showModal === "rejected" ? "Vui lòng nhập lý do từ chối hoặc yêu cầu bổ sung." : "Nhập tiêu đề và nội dung email thông báo đến sinh viên."}
             </p>
+            
+            {showModal === "email" && (
+              <input
+                type="text"
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                placeholder="Tiêu đề email..."
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-4"
+              />
+            )}
+
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}
-              placeholder={showModal === "approved" ? "Nhận xét (không bắt buộc)..." : "Lý do từ chối / Yêu cầu bổ sung..."}
+              placeholder={showModal === "approved" ? "Nhận xét (không bắt buộc)..." : showModal === "email" ? "Nội dung email..." : "Lý do từ chối / Yêu cầu bổ sung..."}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none mb-6"
             />
 
@@ -297,22 +336,24 @@ export default function ReviewApplicationDetailPage() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowModal(null); setFeedback(""); setResultMsg(""); }}
+                onClick={() => { setShowModal(null); setFeedback(""); setEmailSubject(""); setResultMsg(""); }}
                 className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
               >
                 Hủy
               </button>
               <button
-                onClick={handleReview}
-                disabled={reviewing || (showModal === "rejected" && !feedback.trim())}
+                onClick={showModal === "email" ? handleSendEmail : handleReview}
+                disabled={reviewing || (showModal === "rejected" && !feedback.trim()) || (showModal === "email" && (!feedback.trim() || !emailSubject.trim()))}
                 className={`flex-1 px-4 py-3 rounded-xl font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                   showModal === "approved"
                     ? "bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200"
+                    : showModal === "email"
+                    ? "bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200"
                     : "bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-200"
                 }`}
               >
                 {reviewing && <Loader2 className="w-4 h-4 animate-spin" />}
-                {showModal === "approved" ? "Phê duyệt" : "Từ chối"}
+                {showModal === "approved" ? "Phê duyệt" : showModal === "email" ? "Gửi Email" : "Từ chối"}
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@ const { authMiddleware, adminOnly } = require('../middleware/auth');
 router.post('/register',        ctrl.register);
 router.post('/login',           ctrl.login);
 router.post('/forgot-password', ctrl.forgotPassword);
+router.post('/reset-password',  ctrl.resetPassword);
 
 // Protected routes (cần token)
 router.get('/me',               authMiddleware, ctrl.me);

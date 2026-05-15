@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const supabase = require('../config/db');
 const { JWT_SECRET } = require('../middleware/auth');
 
@@ -143,21 +144,128 @@ exports.forgotPassword = async (req, res) => {
     }
 
     // Kiểm tra email có tồn tại
-    const { data: user } = await supabase
+    const { data: user, error: userErr } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, ho_ten')
       .eq('email', email)
       .single();
 
-    // Luôn trả về thành công để tránh lộ thông tin
-    res.json({
-      success: true,
-      message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.',
+    if (userErr || !user) {
+      // Luôn trả về thành công để tránh lộ thông tin
+      return res.json({
+        success: true,
+        message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận.',
+      });
+    }
+
+    // Tạo mã OTP 6 số ngẫu nhiên
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Hết hạn sau 15 phút
+    const expires = new Date(Date.now() + 15 * 60000).toISOString();
+
+    // Lưu vào database
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({ reset_otp: otp, reset_otp_expires: expires })
+      .eq('id', user.id);
+
+    if (updateErr) throw updateErr;
+
+    // Cấu hình Nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
 
-    // TODO: Tích hợp gửi email reset password khi cần
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: '[Hệ thống SV5T] Mã xác thực lấy lại mật khẩu',
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #4f46e5;">Yêu cầu lấy lại mật khẩu</h2>
+          <p>Chào bạn <strong>${user.ho_ten}</strong>,</p>
+          <p>Bạn (hoặc ai đó) vừa yêu cầu đặt lại mật khẩu cho tài khoản ứng dụng Quản lý Sinh viên 5 Tốt / Tập thể Tiên tiến.</p>
+          <p>Dưới đây là mã xác thực (OTP) của bạn. Mã này có hiệu lực trong vòng <strong>15 phút</strong>:</p>
+          <div style="background-color: #f8fafc; border: 2px dashed #4f46e5; text-align: center; padding: 15px; margin: 15px 0; border-radius: 4px; font-size: 24px; font-weight: bold; letter-spacing: 5px;">
+            ${otp}
+          </div>
+          <p>Vui lòng nhập mã này trên trang web để đổi mật khẩu.</p>
+          <p style="color: #ef4444;">Nếu bạn không yêu cầu đổi mật khẩu, vui lòng bỏ qua email này. Tuyệt đối không cung cấp mã OTP cho người khác.</p>
+          <br/>
+          <p style="font-size: 12px; color: #64748b;">Đây là email tự động, vui lòng không phản hồi.</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({
+      success: true,
+      message: 'Nếu email tồn tại trong hệ thống, bạn sẽ nhận được mã xác nhận.',
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.error('Lỗi forgotPassword:', err);
+    res.status(500).json({ success: false, error: 'Lỗi máy chủ khi gửi mã xác thực.' });
+  }
+};
+
+// POST /api/auth/reset-password — Đổi mật khẩu với mã OTP
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Vui lòng cung cấp đủ thông tin.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+    }
+
+    // Tìm user và kiểm tra OTP
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, reset_otp, reset_otp_expires')
+      .eq('email', email)
+      .single();
+
+    if (userErr || !user) {
+      return res.status(400).json({ success: false, error: 'Mã xác thực không đúng hoặc đã hết hạn.' });
+    }
+
+    // Kiểm tra tính hợp lệ của OTP
+    if (user.reset_otp !== otp) {
+      return res.status(400).json({ success: false, error: 'Mã xác thực không đúng.' });
+    }
+
+    if (new Date(user.reset_otp_expires) < new Date()) {
+      return res.status(400).json({ success: false, error: 'Mã xác thực đã hết hạn.' });
+    }
+
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPassword, salt);
+
+    // Cập nhật mật khẩu và xóa OTP
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({
+        password_hash,
+        reset_otp: null,
+        reset_otp_expires: null
+      })
+      .eq('id', user.id);
+
+    if (updateErr) throw updateErr;
+
+    res.json({ success: true, message: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập.' });
+  } catch (err) {
+    console.error('Lỗi resetPassword:', err);
+    res.status(500).json({ success: false, error: 'Lỗi máy chủ khi đặt lại mật khẩu.' });
   }
 };
 
