@@ -31,4 +31,13 @@ function adminOnly(req, res, next) {
   next();
 }
 
-module.exports = { authMiddleware, adminOnly, JWT_SECRET };
+// Middleware kiểm tra quyền admin hoặc cán bộ (can_bo) hoặc lớp trưởng
+function adminOrCanBo(req, res, next) {
+  const allowed = ['admin', 'can_bo', 'lop_truong'];
+  if (!allowed.includes(req.user.role)) {
+    return res.status(403).json({ success: false, error: 'Chỉ Admin, Cán bộ hoặc Lớp trưởng mới có quyền thực hiện thao tác này' });
+  }
+  next();
+}
+
+module.exports = { authMiddleware, adminOnly, adminOrCanBo, JWT_SECRET };

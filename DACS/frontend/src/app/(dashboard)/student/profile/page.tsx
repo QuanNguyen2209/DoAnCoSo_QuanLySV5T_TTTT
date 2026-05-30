@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { profileService, FullProfileData, UserProfile } from "@/services/profileService";
-import { Save, User, Phone, BookOpen, Briefcase, Flag, Loader2, AlertCircle, CheckCircle2, School } from "lucide-react";
+import { Save, User, Phone, BookOpen, Briefcase, Flag, Loader2, AlertCircle, CheckCircle2, School, Camera } from "lucide-react";
 import api from "@/lib/axios";
 
 export default function EProfilePage() {
@@ -15,6 +15,8 @@ export default function EProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -43,6 +45,33 @@ export default function EProfilePage() {
       setError("Không thể tải thông tin hồ sơ. Vui lòng thử lại.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Upload ảnh đại diện
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setError("");
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("avatar", file);
+      const res = await api.post("/user-profiles/me/avatar", formDataUpload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (res.data.success) {
+        // Reload profile để cập nhật avatar
+        await fetchProfile();
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      }
+    } catch (err: any) {
+      console.error("Upload avatar lỗi:", err);
+      setError(err?.response?.data?.error || "Không thể upload ảnh đại diện.");
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = "";
     }
   };
 
@@ -94,12 +123,32 @@ export default function EProfilePage() {
         <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-          <div className="w-24 h-24 bg-white/20 rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden backdrop-blur-sm shadow-inner">
-            {data.user?.avatar_url ? (
-              <img src={data.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-10 h-10 text-white" />
-            )}
+          {/* Avatar với nút upload */}
+          <div
+            className="relative w-24 h-24 rounded-full cursor-pointer group"
+            onClick={() => avatarInputRef.current?.click()}
+          >
+            <div className="w-24 h-24 bg-white/20 rounded-full border-4 border-white/30 flex items-center justify-center overflow-hidden backdrop-blur-sm shadow-inner">
+              {avatarUploading ? (
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+              ) : data.user?.avatar_url ? (
+                <img src={data.user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-10 h-10 text-white" />
+              )}
+            </div>
+            {/* Hover overlay */}
+            <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
+            {/* Hidden file input */}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+            />
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-3xl font-bold mb-1">{data.user?.ho_ten}</h1>
@@ -108,9 +157,11 @@ export default function EProfilePage() {
                 MSSV: {data.user?.ma_sv || "Chưa cập nhật"}
               </span>
             </p>
+            <p className="text-indigo-200 text-xs mt-2">Nhấn vào ảnh đại diện để thay đổi</p>
           </div>
         </div>
       </div>
+
 
       {error && (
         <div className="bg-red-50 text-red-600 p-4 rounded-xl flex items-center gap-3 border border-red-100">

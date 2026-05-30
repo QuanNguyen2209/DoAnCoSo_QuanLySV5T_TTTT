@@ -96,3 +96,54 @@ exports.upsertProfile = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// Upload avatar ảnh đại diện
+exports.uploadAvatar = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'Không tìm thấy file ảnh.' });
+    }
+
+    const { buffer, mimetype, originalname } = req.file;
+    const ext = originalname.split('.').pop();
+    const filePath = `avatar_${userId}_${Date.now()}.${ext}`;
+
+    // Upload lên Supabase Storage bucket "avatars"
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, buffer, {
+        contentType: mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Lấy public URL
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData.publicUrl;
+
+    // Cập nhật avatar_url trong bảng users
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({ avatar_url: publicUrl })
+      .eq('id', userId)
+      .select('id, ho_ten, email, ma_sv, avatar_url')
+      .single();
+
+    if (updateError) throw updateError;
+
+    res.json({
+      success: true,
+      data: { avatar_url: publicUrl, user: updatedUser },
+      message: 'Cập nhật ảnh đại diện thành công',
+    });
+  } catch (err) {
+    console.error('Lỗi uploadAvatar:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};

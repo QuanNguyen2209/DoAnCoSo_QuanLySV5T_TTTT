@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, Send, FileText, CheckCircle2, Clock, XCircle,
-  Upload, Trash2, X, Loader2, Download, AlertCircle, Save
+  Upload, Trash2, X, Loader2, Download, AlertCircle, Save, FileDown
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -32,6 +32,9 @@ export default function ApplicationDetailPage() {
   // Submit state
   const [submitting, setSubmitting] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
+
+  // PDF export state
+  const [exportingPDF, setExportingPDF] = useState(false);
   const [missingItems, setMissingItems] = useState<any[]>([]);
 
   const fetchData = async () => {
@@ -210,6 +213,26 @@ export default function ApplicationDetailPage() {
     }
   };
 
+  // Xuất PDF
+  const handleExportPDF = async () => {
+    setExportingPDF(true);
+    try {
+      const res = await api.get(`/pdf/ho-so/${params.id}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BanGioiThieu_${hoSo.ma_ho_so || 'HoSo'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Lỗi khi xuất PDF');
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   // Gom nhóm các lỗi thiếu theo tiêu chí cha
   const groupByParent = (items: any[]) => {
     return items.reduce((acc, curr) => {
@@ -311,15 +334,26 @@ export default function ApplicationDetailPage() {
           </p>
         </div>
 
-        {isEditable && (
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Nút Xuất PDF */}
           <button
-            onClick={handleSubmitApp}
-            disabled={submitting}
-            className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 w-full md:w-auto justify-center disabled:opacity-50"
+            onClick={handleExportPDF}
+            disabled={exportingPDF}
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-100 justify-center disabled:opacity-50"
           >
-            {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />} Nộp hồ sơ ngay
+            {exportingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileDown className="w-5 h-5" />} Xuất PDF
           </button>
-        )}
+
+          {isEditable && (
+            <button
+              onClick={handleSubmitApp}
+              disabled={submitting}
+              className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 justify-center disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />} Nộp hồ sơ ngay
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Phản hồi từ cán bộ */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CheckSquare, FolderOpen, Edit3, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, Users, User, UserCheck } from "lucide-react";
+import { Home, CheckSquare, FolderOpen, Edit3, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, Users, User, UserCheck, Trophy } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/authStore";
@@ -20,12 +20,14 @@ export default function Sidebar() {
     { name: "Hồ sơ điện tử", icon: User, href: "/student/profile", active: pathname === "/student/profile" },
     { name: "Đăng ký xét duyệt", icon: CheckSquare, href: "/student/register", active: pathname === "/student/register" },
     { name: "Hồ sơ của tôi", icon: FolderOpen, href: "/student/records", active: pathname === "/student/records" },
+    { name: "Vinh danh", icon: Trophy, href: "/honor-roll", active: pathname === "/honor-roll" },
   ];
 
   const reviewerMenu = [
     { name: "Trang chủ", icon: Home, href: "/", active: pathname === "/" },
     { name: "Xét duyệt hồ sơ", icon: CheckCircle, href: "/reviewer/applications", active: pathname === "/reviewer/applications" },
     { name: "Thống kê đơn vị", icon: BarChart3, href: "/reviewer/statistics", active: pathname === "/reviewer/statistics" },
+    { name: "Vinh danh", icon: Trophy, href: "/honor-roll", active: pathname === "/honor-roll" },
   ];
 
   const adminMenu = [
@@ -36,6 +38,7 @@ export default function Sidebar() {
     { name: "Phân công xét duyệt", icon: UserCheck, href: "/admin/assignments", active: pathname === "/admin/assignments" },
     { name: "Quản lý hệ thống", icon: Shield, href: "/admin/system", active: pathname === "/admin/system" },
     { name: "Thống kê hệ thống", icon: BarChart3, href: "/admin/statistics", active: pathname === "/admin/statistics" },
+    { name: "Vinh danh", icon: Trophy, href: "/honor-roll", active: pathname === "/honor-roll" },
   ];
 
   const currentMenu = isAdmin ? adminMenu : isReviewer ? reviewerMenu : studentMenu;

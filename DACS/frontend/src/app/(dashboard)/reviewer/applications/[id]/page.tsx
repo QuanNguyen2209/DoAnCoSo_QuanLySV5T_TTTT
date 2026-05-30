@@ -6,8 +6,9 @@ import { reviewerService } from "@/services/reviewerService";
 import {
   ArrowLeft, User, Phone, BookOpen, Briefcase, Flag,
   CheckCircle2, XCircle, Loader2, FileText, ExternalLink,
-  Clock, AlertCircle, Shield, Mail, Send
+  Clock, AlertCircle, Shield, Mail, Send, FileDown
 } from "lucide-react";
+import api from "@/lib/axios";
 
 export default function ReviewApplicationDetailPage() {
   const params = useParams();
@@ -21,6 +22,7 @@ export default function ReviewApplicationDetailPage() {
   const [showModal, setShowModal] = useState<"approved" | "rejected" | "email" | null>(null);
   const [emailSubject, setEmailSubject] = useState("");
   const [resultMsg, setResultMsg] = useState("");
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   useEffect(() => {
     if (id) fetchDetail();
@@ -112,9 +114,31 @@ export default function ReviewApplicationDetailPage() {
         <button onClick={() => router.push("/reviewer/applications")} className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-medium text-sm transition-colors">
           <ArrowLeft className="w-4 h-4" /> Quay lại danh sách
         </button>
-        <button onClick={() => { setShowModal("email"); setFeedback(""); setEmailSubject(""); setResultMsg(""); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all text-sm">
-          <Mail className="w-4 h-4" /> Gửi Email cho SV
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={async () => {
+              setExportingPDF(true);
+              try {
+                const res = await api.get(`/pdf/ho-so/${id}`, { responseType: 'blob' });
+                const url = URL.createObjectURL(res.data);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BanGioiThieu_${data?.ma_ho_so || 'HoSo'}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch { alert('Lỗi khi xuất PDF'); } finally { setExportingPDF(false); }
+            }}
+            disabled={exportingPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 font-bold rounded-xl hover:bg-emerald-600 hover:text-white transition-all text-sm disabled:opacity-50"
+          >
+            {exportingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />} Xuất PDF
+          </button>
+          <button onClick={() => { setShowModal("email"); setFeedback(""); setEmailSubject(""); setResultMsg(""); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all text-sm">
+            <Mail className="w-4 h-4" /> Gửi Email cho SV
+          </button>
+        </div>
       </div>
 
       {/* Header Card */}

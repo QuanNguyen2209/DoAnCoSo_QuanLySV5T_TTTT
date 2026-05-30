@@ -3,7 +3,7 @@
 Hệ thống quản lý quy trình đăng ký, xét duyệt danh hiệu "Sinh viên 5 Tốt" và "Tập thể Tiên tiến" tích hợp Hồ sơ điện tử (E-Profile).
 
 > **Cập nhật:** 21/04/2026
-> **Trạng thái:** Đang phát triển Module Cán bộ xét duyệt (Reviewer).
+> **Trạng thái:** Đã hoàn thành Module Cán bộ xét duyệt (Reviewer).
 
 ---
 
