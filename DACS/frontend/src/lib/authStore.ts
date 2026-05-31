@@ -17,9 +17,9 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('sv5t_token') : null,
+  token: null,
   isAuthenticated: false,
-  isLoading: true,
+  isLoading: true,  // bắt đầu là true để tránh redirect sớm khi chưa biết trạng thái auth
 
   login: async (email, password) => {
     try {
@@ -56,14 +56,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   checkAuth: async () => {
+    if (typeof window === 'undefined') return;
     const token = localStorage.getItem('sv5t_token');
     if (!token) {
-      set({ isLoading: false, isAuthenticated: false });
+      set({ isLoading: false, isAuthenticated: false, token: null });
       return;
     }
 
+    set({ isLoading: true, token });
     try {
-      set({ token });
       const result = await authService.getMe();
       if (result.success) {
         set({ user: result.data, isAuthenticated: true, isLoading: false });

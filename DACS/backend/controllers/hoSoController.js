@@ -69,6 +69,24 @@ exports.create = async (req, res) => {
   try {
     const { sinh_vien_id, ky_xet_duyet_id, loai_doi_tuong, ghi_chu_sv, cap_xet_duyet } = req.body;
 
+    // Kiểm tra xem đã có hồ sơ nào cho sinh viên này, trong kỳ này, với loại đối tượng này chưa
+    const { data: existingApp, error: checkErr } = await supabase
+      .from('ho_so')
+      .select('id')
+      .eq('sinh_vien_id', sinh_vien_id)
+      .eq('ky_xet_duyet_id', ky_xet_duyet_id)
+      .eq('loai_doi_tuong', loai_doi_tuong)
+      .maybeSingle();
+
+    if (checkErr) throw checkErr;
+    if (existingApp) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Bạn đã có một bản nháp cho danh hiệu này trong đợt này. Vui lòng cập nhật bản nháp đã có.',
+        existingId: existingApp.id
+      });
+    }
+
     const ma_ho_so = await generateMaHoSo();
 
     const { data, error } = await supabase

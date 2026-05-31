@@ -5,6 +5,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 8000, // 8 giây — tránh spinner kẹt khi backend/Supabase không phản hồi
 });
 
 // Tự động gắn token vào mỗi request

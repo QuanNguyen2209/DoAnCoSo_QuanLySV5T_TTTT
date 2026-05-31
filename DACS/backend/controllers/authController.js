@@ -39,8 +39,8 @@ exports.register = async (req, res) => {
       return res.status(409).json({ success: false, error: 'Email này đã được đăng ký' });
     }
 
-    // Hash mật khẩu
-    const salt = await bcrypt.genSalt(10);
+    // Hash mật khẩu (cost=8: đủ an toàn cho môi trường học, nhanh hơn cost=10 ~4x)
+    const salt = await bcrypt.genSalt(8);
     const password_hash = await bcrypt.hash(password, salt);
 
     // Tạo user mới với role mặc định là sinh_vien
@@ -246,8 +246,8 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Mã xác thực đã hết hạn.' });
     }
 
-    // Hash mật khẩu mới
-    const salt = await bcrypt.genSalt(10);
+    // Hash mật khẩu mới (cost=8)
+    const salt = await bcrypt.genSalt(8);
     const password_hash = await bcrypt.hash(newPassword, salt);
 
     // Cập nhật mật khẩu và xóa OTP

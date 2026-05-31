@@ -11,7 +11,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
+    if (!isAuthenticated) {
+      checkAuth();
+    }
   }, []);
 
   // Đang kiểm tra auth

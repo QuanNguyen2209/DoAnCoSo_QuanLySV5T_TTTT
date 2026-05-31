@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FolderOpen, Clock, CheckCircle2, XCircle, ChevronRight, FileText, Loader2, Plus, Calendar } from "lucide-react";
+import { FolderOpen, Clock, CheckCircle2, XCircle, ChevronRight, FileText, Loader2, Plus, Calendar, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/authStore";
@@ -37,6 +37,27 @@ export default function StudentRecordsPage() {
     };
     fetchRecords();
   }, [user?.id]);
+
+  const handleDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Bạn có chắc chắn muốn xóa bản nháp này?")) return;
+    
+    try {
+      const res = await api.delete(`/ho-so/${id}`);
+      if (res.data.success) {
+        setRecords(records.filter(r => r.id !== id));
+        // Update stats
+        if (user?.id) {
+          const statsRes = await api.get(`/ho-so/stats/${user.id}`);
+          if (statsRes.data.success) {
+            setStats(statsRes.data.data);
+          }
+        }
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Lỗi khi xóa hồ sơ");
+    }
+  };
 
   if (loading) {
     return (
@@ -141,8 +162,19 @@ export default function StudentRecordsPage() {
                       {dayjs(hs.created_at).format("DD/MM/YYYY")}
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <div className="p-2 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 rounded-xl transition-all inline-block">
-                        <ChevronRight className="w-5 h-5" />
+                      <div className="flex items-center justify-end gap-2">
+                        {hs.trang_thai === "draft" && (
+                          <button
+                            onClick={(e) => handleDelete(hs.id, e)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Xóa bản nháp"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
+                        <div className="p-2 text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 rounded-xl transition-all inline-block">
+                          <ChevronRight className="w-5 h-5" />
+                        </div>
                       </div>
                     </td>
                   </motion.tr>

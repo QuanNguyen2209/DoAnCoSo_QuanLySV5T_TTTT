@@ -20,6 +20,7 @@ export default function StudentRegisterPage() {
   const [ghiChu, setGhiChu] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [existingId, setExistingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPeriods = async () => {
@@ -61,7 +62,12 @@ export default function StudentRegisterPage() {
         router.push(`/student/records/${res.data.data.id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "Có lỗi xảy ra khi tạo hồ sơ");
+      if (err.response?.data?.existingId) {
+        setError(err.response.data.error);
+        setExistingId(err.response.data.existingId);
+      } else {
+        setError(err.response?.data?.error || "Có lỗi xảy ra khi tạo hồ sơ");
+      }
       setSubmitting(false);
     }
   };
@@ -95,8 +101,17 @@ export default function StudentRegisterPage() {
           
           <div className="space-y-6">
             {error && (
-              <div className="flex items-center gap-2 p-4 bg-rose-50 text-rose-700 font-medium rounded-xl border border-rose-200">
-                <AlertCircle className="w-5 h-5 shrink-0" /> {error}
+              <div className="flex flex-col gap-3 p-4 bg-rose-50 text-rose-700 font-medium rounded-xl border border-rose-200">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 shrink-0" /> {error}
+                </div>
+                {existingId && (
+                  <button 
+                    onClick={() => router.push(`/student/records/${existingId}`)}
+                    className="self-start px-4 py-2 bg-rose-600 text-white text-sm font-bold rounded-lg hover:bg-rose-700 transition-colors flex items-center gap-2">
+                    Đi đến bản nháp hiện tại <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             )}
 
