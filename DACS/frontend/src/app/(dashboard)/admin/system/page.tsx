@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Shield, Database, UserPlus, Search, Key, Mail, Trash2, Loader2, X, CheckCircle } from "lucide-react";
+import { Users, Shield, Database, UserPlus, Search, Key, Mail, Trash2, Loader2, X, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/axios";
 
@@ -27,10 +27,25 @@ export default function SystemManagementPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+
+  // Role modal
   const [roleModal, setRoleModal] = useState<User | null>(null);
   const [newRole, setNewRole] = useState("");
   const [changingRole, setChangingRole] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Delete modal
+  const [deleteModal, setDeleteModal] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Create user modal
+  const [createModal, setCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createSuccess, setCreateSuccess] = useState("");
+  const [createForm, setCreateForm] = useState({
+    ho_ten: "", email: "", password: "", ma_sv: "", role: "sinh_vien",
+  });
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -45,6 +60,7 @@ export default function SystemManagementPage() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+  // --- Change Role ---
   const openRoleModal = (user: User) => {
     setRoleModal(user);
     setNewRole(user.role);
@@ -64,6 +80,36 @@ export default function SystemManagementPage() {
     } finally { setChangingRole(false); }
   };
 
+  // --- Delete User ---
+  const handleDelete = async () => {
+    if (!deleteModal) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/users/${deleteModal.id}`);
+      setDeleteModal(null);
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Lỗi khi xóa người dùng");
+    } finally { setDeleting(false); }
+  };
+
+  // --- Create User ---
+  const handleCreateUser = async () => {
+    setCreating(true);
+    try {
+      await api.post("/users", createForm);
+      setCreateSuccess(`Đã tạo tài khoản "${createForm.ho_ten}" thành công!`);
+      fetchUsers();
+      setTimeout(() => {
+        setCreateModal(false);
+        setCreateSuccess("");
+        setCreateForm({ ho_ten: "", email: "", password: "", ma_sv: "", role: "sinh_vien" });
+      }, 1500);
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Lỗi khi tạo người dùng");
+    } finally { setCreating(false); }
+  };
+
   // Stats
   const stats = {
     total: users.length,
@@ -80,6 +126,13 @@ export default function SystemManagementPage() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Quản lý hệ thống</h1>
           <p className="text-slate-500 font-medium mt-1">Quản trị người dùng, phân quyền và cài đặt chung</p>
         </div>
+        <button
+          onClick={() => { setCreateModal(true); setCreateSuccess(""); }}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300"
+        >
+          <UserPlus className="w-4 h-4" />
+          Thêm người dùng
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -183,10 +236,16 @@ export default function SystemManagementPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => openRoleModal(user)}
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Phân quyền">
-                        <Key className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => openRoleModal(user)}
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Phân quyền">
+                          <Key className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => setDeleteModal(user)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Xóa người dùng">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </motion.tr>
                 ))}
@@ -248,6 +307,134 @@ export default function SystemManagementPage() {
                     </button>
                   </div>
                 </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirm Modal */}
+      <AnimatePresence>
+        {deleteModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDeleteModal(null)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 text-center mb-2">Xóa người dùng?</h2>
+              <p className="text-slate-500 text-center text-sm mb-1">
+                Bạn sắp xóa tài khoản của
+              </p>
+              <p className="text-center font-bold text-slate-800 mb-1">{deleteModal.ho_ten}</p>
+              <p className="text-center text-xs text-slate-400 mb-6">{deleteModal.email}</p>
+              <p className="text-center text-xs text-red-500 font-medium mb-6">Hành động này không thể hoàn tác!</p>
+              <div className="flex gap-3">
+                <button onClick={() => setDeleteModal(null)}
+                  className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all">
+                  Hủy
+                </button>
+                <button onClick={handleDelete} disabled={deleting}
+                  className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Xóa tài khoản
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create User Modal */}
+      <AnimatePresence>
+        {createModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-900">Thêm người dùng</h2>
+                <button onClick={() => setCreateModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              {createSuccess ? (
+                <div className="flex flex-col items-center py-6">
+                  <CheckCircle className="w-16 h-16 text-emerald-500 mb-4" />
+                  <p className="text-lg font-bold text-emerald-700 text-center">{createSuccess}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Họ và tên <span className="text-red-500">*</span></label>
+                    <input
+                      type="text" placeholder="Nguyễn Văn A"
+                      value={createForm.ho_ten}
+                      onChange={e => setCreateForm(f => ({ ...f, ho_ten: e.target.value }))}
+                      className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 focus:bg-white rounded-xl px-4 py-2.5 text-slate-900 outline-none transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                    <input
+                      type="email" placeholder="example@edu.vn"
+                      value={createForm.email}
+                      onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))}
+                      className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 focus:bg-white rounded-xl px-4 py-2.5 text-slate-900 outline-none transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Mật khẩu <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <input
+                        type={showCreatePassword ? "text" : "password"} placeholder="••••••••"
+                        value={createForm.password}
+                        onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))}
+                        className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 focus:bg-white rounded-xl px-4 py-2.5 pr-10 text-slate-900 outline-none transition-all text-sm"
+                      />
+                      <button type="button" onClick={() => setShowCreatePassword(!showCreatePassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                        {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Mã sinh viên</label>
+                    <input
+                      type="text" placeholder="2202xxxx (không bắt buộc)"
+                      value={createForm.ma_sv}
+                      onChange={e => setCreateForm(f => ({ ...f, ma_sv: e.target.value }))}
+                      className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 focus:bg-white rounded-xl px-4 py-2.5 text-slate-900 outline-none transition-all text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Vai trò</label>
+                    <select
+                      value={createForm.role}
+                      onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}
+                      className="w-full bg-slate-50 border border-transparent focus:border-indigo-500 focus:bg-white rounded-xl px-4 py-2.5 text-slate-900 outline-none transition-all text-sm font-medium"
+                    >
+                      <option value="sinh_vien">Sinh viên</option>
+                      <option value="lop_truong">Lớp trưởng</option>
+                      <option value="can_bo">Cán bộ Đoàn</option>
+                      <option value="admin">Quản trị viên</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button onClick={() => setCreateModal(false)}
+                      className="px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                    <button
+                      onClick={handleCreateUser}
+                      disabled={creating || !createForm.ho_ten || !createForm.email || !createForm.password}
+                      className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {creating && <Loader2 className="w-4 h-4 animate-spin" />}
+                      <UserPlus className="w-4 h-4" />
+                      Tạo tài khoản
+                    </button>
+                  </div>
+                </div>
               )}
             </motion.div>
           </motion.div>

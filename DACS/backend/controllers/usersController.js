@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const supabase = require('../config/db');
 
 // GET /api/users — Lấy danh sách tất cả user (cho Admin)
@@ -49,6 +50,70 @@ exports.update = async (req, res) => {
 
     if (error) throw error;
     res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// DELETE /api/users/:id — Admin xóa người dùng
+exports.deleteUser = async (req, res) => {
+  try {
+    const targetId = parseInt(req.params.id);
+
+    // Không cho phép tự xóa chính mình
+    if (req.user && req.user.id === targetId) {
+      return res.status(400).json({ success: false, error: 'Không thể tự xóa tài khoản của mình' });
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', targetId);
+
+    if (error) throw error;
+    res.json({ success: true, message: 'Đã xóa người dùng thành công' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// POST /api/users — Admin tạo người dùng mới
+exports.createUser = async (req, res) => {
+  try {
+    const { ho_ten, email, password, ma_sv, role } = req.body;
+
+    if (!ho_ten || !email || !password) {
+      return res.status(400).json({ success: false, error: 'Vui lòng điền đầy đủ thông tin bắt buộc (họ tên, email, mật khẩu)' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, error: 'Mật khẩu phải có ít nhất 6 ký tự' });
+    }
+
+    const validRoles = ['sinh_vien', 'lop_truong', 'can_bo', 'admin'];
+    const userRole = validRoles.includes(role) ? role : 'sinh_vien';
+
+    // Kiểm tra email trùng
+    const { data: existing } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'Email này đã được đăng ký' });
+    }
+
+    const salt = await bcrypt.genSalt(8);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{ ho_ten, email, password_hash, ma_sv: ma_sv || null, role: userRole }])
+      .select('id, ho_ten, email, ma_sv, role, avatar_url')
+      .single();
+
+    if (error) throw error;
+    res.status(201).json({ success: true, message: 'Tạo người dùng thành công', data });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { User, CheckSquare, Shield, Users, Mail, Lock, Facebook, Loader2, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Facebook, Loader2, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,16 +40,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const roles = [
-    { id: 'student', title: 'Sinh viên', icon: <User className="w-5 h-5 mb-1" /> },
-    { id: 'reviewer', title: 'Người duyệt', icon: <CheckSquare className="w-5 h-5 mb-1" /> },
-    { id: 'admin', title: 'Admin', icon: <Shield className="w-5 h-5 mb-1 text-orange-600" /> },
-    { id: 'monitor', title: 'Lớp trưởng', icon: <Users className="w-5 h-5 mb-1" /> },
-  ];
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,27 +97,11 @@ export default function LoginPage() {
             QUẢN LÝ<br />SINH VIÊN 5 TỐT & TẬP<br />THỂ TIÊN TIẾN
           </h1>
           <p className="text-slate-500 font-medium text-center">
-            Chào mừng bạn quay trở lại. Hãy chọn vai trò của mình để bắt đầu.
+            Chào mừng bạn quay trở lại. Vui lòng đăng nhập để tiếp tục.
           </p>
         </div>
 
-            {/* Chọn vai trò */}
-            <div className="grid grid-cols-4 gap-3 mb-8">
-              {roles.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => setSelectedRole(role.id)}
-                  className={`flex flex-col items-center justify-center py-4 rounded-2xl transition-all border-2 text-xs font-semibold
-                    ${selectedRole === role.id
-                      ? 'bg-blue-50 border-blue-200 text-slate-800 shadow-sm'
-                      : 'bg-indigo-50/50 border-transparent text-slate-600 hover:bg-indigo-50'}`}
-                  type="button"
-                >
-                  {role.icon}
-                  {role.title}
-                </button>
-              ))}
-            </div>
+
 
             {/* Form Đăng nhập */}
             <form className="space-y-5" onSubmit={handleLogin}>

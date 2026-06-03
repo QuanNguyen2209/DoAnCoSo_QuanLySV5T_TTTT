@@ -55,6 +55,10 @@ export default function RegisterPage() {
     setSuccess("");
 
     // Validate
+    if (!maSv.trim()) {
+      setError("Vui lòng nhập mã sinh viên");
+      return;
+    }
     if (password !== confirmPassword) {
       setError("Mật khẩu xác nhận không khớp");
       return;
@@ -70,7 +74,7 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    const result = await register(hoTen, email, password, maSv || undefined);
+    const result = await register(hoTen, email, password, maSv);
 
     if (result.success) {
       setSuccess(result.message || "Đăng ký thành công! Đang chuyển về trang đăng nhập...");
@@ -88,12 +92,12 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-white flex w-full font-sans">
       {/* Cột trái: Form đăng ký */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-8 md:px-16 lg:px-24 xl:px-32 py-12 relative z-10 overflow-y-auto">
-        
+
         {/* Header / Logo */}
         <div className="flex items-center justify-center mb-10 w-full">
-          <img 
-            src="/imgs/logo_hutech.jpg" 
-            alt="Logo Hutech" 
+          <img
+            src="/imgs/logo_hutech.jpg"
+            alt="Logo Hutech"
             className="w-full max-w-[380px] h-auto object-contain bg-white"
           />
         </div>
@@ -110,7 +114,7 @@ export default function RegisterPage() {
 
         {/* Form Đăng ký */}
         <form className="space-y-4" onSubmit={handleRegister}>
-          
+
           {/* Hiển thị lỗi */}
           {error && (
             <motion.div
@@ -136,9 +140,9 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Họ và tên</label>
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Nguyễn Văn A" 
+              <input
+                type="text"
+                placeholder="Nguyễn Văn A"
                 value={hoTen}
                 onChange={(e) => setHoTen(e.target.value)}
                 className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-medium"
@@ -150,9 +154,9 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Email sinh viên</label>
             <div className="relative">
-              <input 
-                type="email" 
-                placeholder="2202xxxx@vnu.edu.vn" 
+              <input
+                type="email"
+                placeholder="2202xxxx@vnu.edu.vn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-medium"
@@ -162,14 +166,15 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Mã sinh viên (không bắt buộc)</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Mã sinh viên <span className="text-red-500">*</span></label>
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="2202xxxx" 
+              <input
+                type="text"
+                placeholder="2202xxxx"
                 value={maSv}
                 onChange={(e) => setMaSv(e.target.value)}
                 className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-medium"
+                required
               />
             </div>
           </div>
@@ -177,9 +182,9 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Mật khẩu</label>
             <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                placeholder="••••••••" 
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 pr-12 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-bold tracking-widest"
@@ -198,9 +203,9 @@ export default function RegisterPage() {
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Xác nhận mật khẩu</label>
             <div className="relative">
-              <input 
-                type={showConfirmPassword ? "text" : "password"} 
-                placeholder="••••••••" 
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full bg-indigo-50/50 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 pr-12 text-slate-900 outline-none transition-all placeholder:text-slate-400 font-bold tracking-widest"
@@ -282,9 +287,9 @@ export default function RegisterPage() {
       {/* Cột phải: Background Image & Card */}
       <div className="hidden lg:block lg:w-1/2 relative p-4">
         <div className="w-full h-full relative rounded-3xl overflow-hidden shadow-2xl bg-slate-50/50">
-          <img 
-            src="/imgs/anh_trang_dang_nhap.jpg" 
-            alt="Student on campus" 
+          <img
+            src="/imgs/anh_trang_dang_nhap.jpg"
+            alt="Student on campus"
             className="absolute inset-0 w-full h-full object-contain"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent pointer-events-none"></div>
