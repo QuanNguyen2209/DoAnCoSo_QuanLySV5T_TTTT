@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, CheckSquare, FolderOpen, Edit3, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, Users, User, UserCheck, Trophy } from "lucide-react";
+import { Home, CheckSquare, FolderOpen, Settings, Shield, LayoutList, CheckCircle, BarChart3, School, User, UserCheck, Trophy, CalendarCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/authStore";
@@ -13,13 +13,13 @@ export default function Sidebar() {
 
   const isAdmin = role === 'admin';
   const isReviewer = role === 'can_bo';
-  const isStudent = role === 'sinh_vien' || role === 'lop_truong';
 
   const studentMenu = [
     { name: "Trang chủ", icon: Home, href: "/", active: pathname === "/" },
     { name: "Hồ sơ điện tử", icon: User, href: "/student/profile", active: pathname === "/student/profile" },
     { name: "Đăng ký xét duyệt", icon: CheckSquare, href: "/student/register", active: pathname === "/student/register" },
     { name: "Hồ sơ của tôi", icon: FolderOpen, href: "/student/records", active: pathname === "/student/records" },
+    { name: "Sự kiện", icon: CalendarCheck, href: "/student/events", active: pathname === "/student/events" },
     { name: "Vinh danh", icon: Trophy, href: "/honor-roll", active: pathname === "/honor-roll" },
   ];
 
@@ -38,6 +38,7 @@ export default function Sidebar() {
     { name: "Phân công xét duyệt", icon: UserCheck, href: "/admin/assignments", active: pathname === "/admin/assignments" },
     { name: "Quản lý hệ thống", icon: Shield, href: "/admin/system", active: pathname === "/admin/system" },
     { name: "Thống kê hệ thống", icon: BarChart3, href: "/admin/statistics", active: pathname === "/admin/statistics" },
+    { name: "Quản lý Sự kiện", icon: CalendarCheck, href: "/admin/events", active: pathname === "/admin/events" },
     { name: "Vinh danh", icon: Trophy, href: "/honor-roll", active: pathname === "/honor-roll" },
   ];
 

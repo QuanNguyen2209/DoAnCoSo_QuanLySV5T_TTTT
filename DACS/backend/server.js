@@ -31,6 +31,7 @@ const userProfileRoutes = require('./routes/userProfiles');
 const reviewerRoutes    = require('./routes/reviewer');
 const vinhDanhRoutes    = require('./routes/vinhDanh');
 const pdfRoutes         = require('./routes/pdf');
+const eventRoutes       = require('./routes/events');
 
 app.use('/api/auth',         authRoutes);
 app.use('/api/ky-xet-duyet', kyXetDuyetRoutes);
@@ -44,6 +45,7 @@ app.use('/api/user-profiles',userProfileRoutes);
 app.use('/api/reviewer',     reviewerRoutes);
 app.use('/api/vinh-danh',    vinhDanhRoutes);
 app.use('/api/pdf',          pdfRoutes);
+app.use('/api/events',       eventRoutes);
 
 // Health check
 app.get('/', (req, res) => {

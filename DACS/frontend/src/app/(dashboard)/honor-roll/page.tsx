@@ -7,8 +7,22 @@ import {
   Sparkles, Image as ImageIcon, ChevronDown, Globe, Lock, ToggleLeft, ToggleRight
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/authStore";
+
+const Honor3DGallery = dynamic(() => import("@/components/honor3d/Honor3DGallery"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[650px] md:h-[780px] rounded-3xl bg-slate-950 flex flex-col items-center justify-center gap-4 text-white border border-slate-800 shadow-2xl">
+      <Loader2 className="w-10 h-10 text-amber-400 animate-spin" />
+      <div className="text-center">
+        <p className="font-bold text-base text-amber-300">Đang khởi tạo không gian 3D...</p>
+        <p className="text-xs text-slate-400 mt-1">Đang tải mô hình WebGL & dữ liệu vinh danh</p>
+      </div>
+    </div>
+  ),
+});
 
 interface HonorStudent {
   sinh_vien: {
@@ -42,6 +56,9 @@ export default function HonorRollPage() {
   const [khoaFilter, setKhoaFilter] = useState("all");
   const [periods, setPeriods] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+
+  // Chế độ hiển thị: 3D không gian ảo hoặc 2D danh sách
+  const [viewMode, setViewMode] = useState<"3d" | "2d">("3d");
 
   // Poster state
   const [posterTemplate, setPosterTemplate] = useState<string | null>(null);
@@ -382,10 +399,60 @@ export default function HonorRollPage() {
         </div>
       </div>
 
-      {/* ───── POSTER TEMPLATE (chỉ admin) ───── */}
-      {isAdmin && students.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-3xl p-6 md:p-8">
+      {/* ───── VIEW MODE SWITCHER (3D Triển Lãm vs 2D Danh Sách) ───── */}
+      <div className="flex items-center justify-between flex-wrap gap-4 pt-1">
+        <div className="flex items-center p-1.5 bg-slate-100 rounded-2xl border border-slate-200 shadow-inner">
+          <button
+            onClick={() => setViewMode("3d")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              viewMode === "3d"
+                ? "bg-gradient-to-r from-amber-500 via-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-500/25 ring-2 ring-indigo-400/30"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            Không Gian 3D Triển Lãm
+            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/20 text-white font-extrabold ml-1">
+              3D VR
+            </span>
+          </button>
+          <button
+            onClick={() => setViewMode("2d")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+              viewMode === "2d"
+                ? "bg-white text-slate-900 shadow-md border border-slate-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Users className="w-4 h-4 text-slate-600" />
+            {isAdmin ? "Danh sách 2D & Quản lý Poster" : "Danh sách 2D / Poster"}
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-500 font-medium bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200/80">
+          Hiển thị <span className="font-bold text-slate-800">{students.length}</span> gương mặt vinh danh
+        </div>
+      </div>
+
+      {viewMode === "3d" ? (
+        students.length === 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="text-center py-20 bg-slate-950 border border-slate-800 rounded-3xl text-white">
+            <Sparkles className="w-16 h-16 text-amber-400 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">Chưa có sinh viên nào được vinh danh</h3>
+            <p className="text-sm text-slate-400">Sinh viên sẽ xuất hiện trong không gian 3D khi hồ sơ được phê duyệt.</p>
+          </motion.div>
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+            <Honor3DGallery students={students} />
+          </motion.div>
+        )
+      ) : (
+        <>
+          {/* ───── POSTER TEMPLATE (chỉ admin) ───── */}
+          {isAdmin && students.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-3xl p-6 md:p-8">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
               <ImageIcon className="w-5 h-5 text-indigo-600" />
@@ -546,6 +613,8 @@ export default function HonorRollPage() {
             ))}
           </div>
         )
+      )}
+        </>
       )}
 
       {/* ───── POSTER PREVIEW MODAL ───── */}
