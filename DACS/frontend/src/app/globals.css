@@ -24,3 +24,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Đảm bảo chữ trong tất cả các ô nhập liệu luôn đậm và rõ nét */
+input, select, textarea {
+  color: #0f172a !important; /* slate-900 */
+  font-weight: 500 !important;
+}
+
+/* Tùy chỉnh màu chữ cho placeholder để không bị nhầm với chữ đã nhập */
+::placeholder {
+  color: #94a3b8 !important; /* slate-400 */
+  font-weight: 400 !important;
+}
+
+/* Định dạng riêng cho các ô bị khóa (disabled) hoặc chỉ đọc (readOnly) */
+input:disabled, input[readonly], 
+select:disabled, 
+textarea:disabled {
+  color: #475569 !important; /* slate-600 */
+  background-color: #f8fafc !important; /* slate-50 */
+  cursor: not-allowed;
+}

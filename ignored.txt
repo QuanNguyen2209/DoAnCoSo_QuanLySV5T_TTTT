@@ -1,0 +1,5 @@
+﻿!! DACS/backend/.env
+!! DACS/backend/node_modules/
+!! DACS/frontend/.next/
+!! DACS/frontend/next-env.d.ts
+!! DACS/frontend/node_modules/

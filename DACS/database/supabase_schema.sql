@@ -1,5 +1,5 @@
 -- ================================================================
--- SUPABASE SCHEMA (PostgreSQL)
+-- SUPABASE SCHEMA (PostgreSQL) — PHIÊN BẢN THỰC TẾ
 -- Hệ thống Quản lý Sinh viên 5 Tốt & Tập thể Tiên tiến
 --
 -- HƯỚNG DẪN: Paste toàn bộ nội dung này vào
@@ -11,8 +11,8 @@
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS khoa (
     id          SERIAL PRIMARY KEY,
-    ma_khoa     VARCHAR(20) NOT NULL UNIQUE,
-    ten_khoa    VARCHAR(200) NOT NULL,
+    ma_khoa     VARCHAR NOT NULL UNIQUE,
+    ten_khoa    VARCHAR NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -21,24 +21,25 @@ CREATE TABLE IF NOT EXISTS khoa (
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS lop_hoc (
     id          SERIAL PRIMARY KEY,
-    ma_lop      VARCHAR(20) NOT NULL UNIQUE,
-    ten_lop     VARCHAR(100) NOT NULL,
+    ma_lop      VARCHAR NOT NULL UNIQUE,
+    ten_lop     VARCHAR NOT NULL,
     khoa_id     INT REFERENCES khoa(id),
-    nien_khoa   VARCHAR(20),
+    nien_khoa   VARCHAR,
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------
 -- 3. Người dùng
+-- Roles: sinh_vien, lop_truong, can_bo, admin
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id              SERIAL PRIMARY KEY,
-    ho_ten          VARCHAR(100) NOT NULL,
-    email           VARCHAR(100) NOT NULL UNIQUE,
-    password_hash   VARCHAR(255) NOT NULL,
-    ma_sv           VARCHAR(20) UNIQUE,
-    role            VARCHAR(20) DEFAULT 'student'
-                    CHECK (role IN ('student','monitor','reviewer','admin')),
+    ho_ten          VARCHAR NOT NULL,
+    email           VARCHAR NOT NULL UNIQUE,
+    password_hash   VARCHAR NOT NULL,
+    ma_sv           VARCHAR UNIQUE,
+    role            VARCHAR DEFAULT 'sinh_vien'
+                    CHECK (role IN ('sinh_vien','lop_truong','can_bo','admin')),
     lop_id          INT REFERENCES lop_hoc(id),
     avatar_url      TEXT,
     is_active       BOOLEAN DEFAULT TRUE,
@@ -46,47 +47,78 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ----------------------------------------------------------------
--- 4. Kỳ xét duyệt
+-- 4. Hồ sơ điện tử (E-Profile)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id                      SERIAL PRIMARY KEY,
+    user_id                 INT NOT NULL UNIQUE REFERENCES users(id),
+    gioi_tinh               VARCHAR,
+    ngay_sinh               DATE,
+    dan_toc                 VARCHAR,
+    ton_giao                VARCHAR,
+    dia_chi_thuong_tru       TEXT,
+    so_dien_thoai           VARCHAR,
+    nam_hoc                 VARCHAR,
+    trinh_do_dao_tao        VARCHAR,
+    diem_tich_luy           NUMERIC,
+    diem_ren_luyen          INT,
+    ly_luan_chinh_tri       VARCHAR,
+    ngoai_ngu               VARCHAR,
+    tin_hoc                 VARCHAR,
+    minh_chung_hoc_tap      TEXT,
+    minh_chung_ngoai_ngu    TEXT,
+    minh_chung_tin_hoc      TEXT,
+    chuc_vu_doan_hoi        TEXT,
+    don_vi_doan_truc_thuoc  VARCHAR,
+    ngay_ket_nap_doan       DATE,
+    thong_tin_chinh_tri     TEXT,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------
+-- 5. Kỳ xét duyệt
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ky_xet_duyet (
     id              SERIAL PRIMARY KEY,
-    ten_ky          VARCHAR(200) NOT NULL,
+    ten_ky          VARCHAR NOT NULL,
     mo_ta           TEXT,
-    loai            VARCHAR(20) NOT NULL
+    loai            VARCHAR NOT NULL
                     CHECK (loai IN ('hk1','hk2','ca_nam')),
-    nam_hoc         VARCHAR(20) NOT NULL,
+    nam_hoc         VARCHAR NOT NULL,
     ngay_bat_dau    DATE NOT NULL,
     ngay_ket_thuc   DATE NOT NULL,
-    trang_thai      VARCHAR(20) DEFAULT 'upcoming'
+    trang_thai      VARCHAR DEFAULT 'upcoming'
                     CHECK (trang_thai IN ('upcoming','active','closed')),
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------
--- 5. Tiêu chí đánh giá
+-- 6. Tiêu chí đánh giá (phân cấp cha-con)
+-- loai_doi_tuong: individual (SV5T), collective (TTTT)
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tieu_chi (
     id              SERIAL PRIMARY KEY,
-    ten_tieu_chi    VARCHAR(200) NOT NULL,
+    ten_tieu_chi    VARCHAR NOT NULL,
     mo_ta           TEXT,
-    loai_doi_tuong  VARCHAR(20) DEFAULT 'both'
-                    CHECK (loai_doi_tuong IN ('individual','collective','both')),
     thu_tu          INT DEFAULT 0,
     is_active       BOOLEAN DEFAULT TRUE,
-    created_at      TIMESTAMPTZ DEFAULT NOW()
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+    parent_id       INT REFERENCES tieu_chi(id),
+    loai_doi_tuong  TEXT DEFAULT 'individual'
 );
 
 -- ----------------------------------------------------------------
--- 6. Hồ sơ đăng ký
+-- 7. Hồ sơ đăng ký
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS ho_so (
     id                  SERIAL PRIMARY KEY,
-    ma_ho_so            VARCHAR(20) NOT NULL UNIQUE,
+    ma_ho_so            VARCHAR NOT NULL UNIQUE,
     sinh_vien_id        INT NOT NULL REFERENCES users(id),
     ky_xet_duyet_id     INT NOT NULL REFERENCES ky_xet_duyet(id),
-    loai_doi_tuong      VARCHAR(20) NOT NULL
+    loai_doi_tuong      VARCHAR NOT NULL
                         CHECK (loai_doi_tuong IN ('individual','collective')),
-    trang_thai          VARCHAR(20) DEFAULT 'draft'
+    trang_thai          VARCHAR DEFAULT 'draft'
                         CHECK (trang_thai IN ('draft','pending','reviewing','approved','rejected')),
     ghi_chu_sv          TEXT,
     phan_hoi_duyet      TEXT,
@@ -112,7 +144,7 @@ CREATE TRIGGER update_ho_so_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ----------------------------------------------------------------
--- 7. Minh chứng
+-- 8. Minh chứng
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS minh_chung (
     id              SERIAL PRIMARY KEY,
@@ -120,84 +152,57 @@ CREATE TABLE IF NOT EXISTS minh_chung (
     tieu_chi_id     INT NOT NULL REFERENCES tieu_chi(id),
     ten_thanh_tich  TEXT NOT NULL,
     mo_ta           TEXT,
-    cap_thanh_tich  VARCHAR(20) DEFAULT 'khac'
+    cap_thanh_tich  VARCHAR DEFAULT 'khac'
                     CHECK (cap_thanh_tich IN ('truong','khoa','khac')),
     ngay_ghi_nhan   DATE,
     file_url        TEXT,
     file_name       TEXT,
     file_size       INT,
-    file_type       VARCHAR(100),
+    file_type       VARCHAR,
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ----------------------------------------------------------------
--- 8. Lịch sử hồ sơ
+-- 9. File minh chứng (multi-file per minh_chung, tối đa 4)
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS minh_chung_files (
+    id              SERIAL PRIMARY KEY,
+    minh_chung_id   INT NOT NULL REFERENCES minh_chung(id) ON DELETE CASCADE,
+    file_url        TEXT NOT NULL,
+    file_name       VARCHAR,
+    file_size       INT,
+    file_type       VARCHAR,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ----------------------------------------------------------------
+-- 10. Lịch sử hồ sơ
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS lich_su_ho_so (
     id                      SERIAL PRIMARY KEY,
     ho_so_id                INT NOT NULL REFERENCES ho_so(id) ON DELETE CASCADE,
-    tu_trang_thai           VARCHAR(50),
-    den_trang_thai          VARCHAR(50),
+    tu_trang_thai           VARCHAR,
+    den_trang_thai          VARCHAR,
     ghi_chu                 TEXT,
     nguoi_thuc_hien_id      INT REFERENCES users(id),
     thoi_gian               TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ================================================================
--- ROW LEVEL SECURITY (RLS) - Bảo mật dữ liệu
--- ================================================================
-
-ALTER TABLE users        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE ho_so        ENABLE ROW LEVEL SECURITY;
-ALTER TABLE minh_chung   ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lich_su_ho_so ENABLE ROW LEVEL SECURITY;
-
--- Policy: service_role (backend) có toàn quyền bypass RLS
--- Các bảng khác (ky_xet_duyet, tieu_chi, khoa, lop_hoc) không cần RLS vì ai cũng đọc được
+-- ----------------------------------------------------------------
+-- 11. Phân công cán bộ xét duyệt theo lớp
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reviewer_assignments (
+    id              SERIAL PRIMARY KEY,
+    reviewer_id     INT NOT NULL REFERENCES users(id),
+    lop_id          INT NOT NULL REFERENCES lop_hoc(id),
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- ================================================================
--- DỮ LIỆU MẪU (SEED DATA)
+-- ROW LEVEL SECURITY (RLS)
 -- ================================================================
-
--- Khoa
-INSERT INTO khoa (ma_khoa, ten_khoa) VALUES
-('CNTT', 'Công nghệ Thông tin'),
-('KT',   'Kinh tế'),
-('QTKD', 'Quản trị Kinh doanh'),
-('NN',   'Ngôn ngữ'),
-('KH',   'Khoa học Tự nhiên')
-ON CONFLICT (ma_khoa) DO NOTHING;
-
--- Lớp học
-INSERT INTO lop_hoc (ma_lop, ten_lop, khoa_id, nien_khoa) VALUES
-('CNTT01', 'CNTT K22A', 1, '2022-2026'),
-('CNTT02', 'CNTT K22B', 1, '2022-2026'),
-('KT01',   'Kinh tế K22A', 2, '2022-2026'),
-('QTKD01', 'QTKD K22A', 3, '2022-2026')
-ON CONFLICT (ma_lop) DO NOTHING;
-
--- Kỳ xét duyệt
-INSERT INTO ky_xet_duyet (ten_ky, mo_ta, loai, nam_hoc, ngay_bat_dau, ngay_ket_thuc, trang_thai) VALUES
-('Học kỳ 1 (2024-2025)', 'Kỳ xét duyệt Sinh viên 5 tốt HK1 năm học 2024-2025', 'hk1', '2024-2025', '2025-01-01', '2025-02-28', 'closed'),
-('Học kỳ 2 (2024-2025)', 'Kỳ xét duyệt Sinh viên 5 tốt HK2 năm học 2024-2025', 'hk2', '2024-2025', '2026-03-01', '2026-04-30', 'active'),
-('Cả năm (2025-2026)',   'Kỳ xét duyệt Tập thể Tiên tiến năm học 2025-2026',    'ca_nam', '2025-2026', '2026-06-01', '2026-07-31', 'upcoming');
-
--- Tiêu chí
-INSERT INTO tieu_chi (ten_tieu_chi, mo_ta, loai_doi_tuong, thu_tu) VALUES
-('Học tập tốt',       'Đạt thành tích học tập xuất sắc, GPA từ 3.2 trở lên',              'individual', 1),
-('Đạo đức tốt',       'Có lối sống lành mạnh, chấp hành tốt nội quy nhà trường',           'individual', 2),
-('Thể lực tốt',       'Tham gia các hoạt động thể dục thể thao, đạt chuẩn sức khỏe',       'individual', 3),
-('Tình nguyện tốt',   'Tích cực tham gia hoạt động tình nguyện, cộng đồng',                'individual', 4),
-('Hội nhập tốt',      'Hội nhập tốt và kỹ năng mềm, ngoại ngữ, tin học',                  'individual', 5),
-('Phong trào thể thao','Tổ chức và tham gia tích cực các hoạt động thể thao',              'collective', 6),
-('Hoạt động văn hóa', 'Tổ chức hoạt động văn hóa - nghệ thuật nổi bật',                   'collective', 7),
-('Tình nguyện cộng đồng','Có nhiều đóng góp cho cộng đồng và xã hội',                     'collective', 8);
-
--- ================================================================
--- SUPABASE STORAGE — Tạo bucket cho file minh chứng
--- (Chạy lệnh này qua Supabase Dashboard → Storage → New Bucket)
--- Hoặc chạy SQL sau nếu extension storage đã được enable:
--- ================================================================
--- INSERT INTO storage.buckets (id, name, public)
--- VALUES ('minh-chung', 'minh-chung', false)
--- ON CONFLICT (id) DO NOTHING;
+ALTER TABLE users           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ho_so           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE minh_chung      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE minh_chung_files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lich_su_ho_so   ENABLE ROW LEVEL SECURITY;

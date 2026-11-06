@@ -5,3 +5,4 @@ build/
 .next/
 *.log
 .DS_Store
+_backup_truoc_toi_uu_*/
