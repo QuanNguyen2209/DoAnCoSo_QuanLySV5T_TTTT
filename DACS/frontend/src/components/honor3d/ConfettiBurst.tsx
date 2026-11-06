@@ -5,9 +5,18 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 
-const COUNT = 600;
-const LIFE = 4.5; // giây
-const COLORS = ["#ffd66b", "#f43f5e", "#3b82f6", "#22c55e", "#a855f7", "#ffffff"];
+const COUNT = 850;
+const LIFE = 5.0; // giây
+// Màu sắc cờ hoa Đoàn – Hội Thanh niên Việt Nam
+const COLORS = [
+  "#DA251D", // Đỏ cờ Tổ quốc & Đoàn
+  "#FFCC00", // Vàng sao kim
+  "#00539F", // Xanh áo Đoàn thanh niên
+  "#00A3E0", // Xanh Hội Sinh viên
+  "#ffffff", // Trắng tinh khôi
+  "#ffd700", // Vàng ánh kim
+  "#ff4d4d", // Đỏ tươi
+];
 
 const DEFAULT_ORIGIN: [number, number, number] = [0, 3.1, 0];
 
@@ -73,7 +82,7 @@ export default function ConfettiBurst({ burstKey, origin = DEFAULT_ORIGIN }: { b
 
   return (
     <points ref={points} geometry={geometry} visible={false} frustumCulled={false}>
-      <pointsMaterial ref={material} size={0.09} vertexColors transparent depthWrite={false} toneMapped={false} sizeAttenuation />
+      <pointsMaterial ref={material} size={0.12} vertexColors transparent depthWrite={false} toneMapped={false} sizeAttenuation />
     </points>
   );
 }

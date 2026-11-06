@@ -141,14 +141,20 @@ function HonorFrame3D({ student, slot, isSelected, onSelect }: FrameProps) {
           <planeGeometry args={[FRAME_W + 0.35, FRAME_H + 0.35]} />
           <meshBasicMaterial ref={glow} color={[3, 2.2, 0.7]} transparent opacity={0} toneMapped={false} depthWrite={false} />
         </mesh>
-        {/* khung vàng */}
+        {/* khung vàng-đỏ Đoàn */}
         <mesh geometry={getFrameGeometry()}>
-          <meshStandardMaterial color="#d6a93f" metalness={1} roughness={0.22} />
+          <meshStandardMaterial
+            color={isSelected ? "#DA251D" : "#d6a93f"}
+            emissive={isSelected ? "#8b0000" : "#000000"}
+            emissiveIntensity={isSelected ? 0.5 : 0}
+            metalness={1}
+            roughness={0.22}
+          />
         </mesh>
-        {/* viền giấy passe-partout */}
+        {/* viền trắng ngà passe-partout */}
         <mesh position={[0, 0, -0.005]}>
           <planeGeometry args={[FRAME_W - BORDER * 2 + 0.02, FRAME_H - BORDER * 2 + 0.02]} />
-          <meshStandardMaterial color="#f3ecdc" roughness={0.9} />
+          <meshStandardMaterial color="#f8f4ec" roughness={0.9} />
         </mesh>
         {/* ảnh chân dung */}
         <mesh position={[0, 0.02, 0.004]}>
@@ -161,21 +167,26 @@ function HonorFrame3D({ student, slot, isSelected, onSelect }: FrameProps) {
             roughness={0.55}
           />
         </mesh>
-        {/* huy hiệu sao cho SV đạt nhiều lần */}
+        {/* huy hiệu sao vàng Đoàn — sáng hơn, vị trí góc trên phải */}
         {student.so_lan_dat > 1 && (
           <mesh geometry={getStarGeometry()} position={[FRAME_W / 2 - 0.1, FRAME_H / 2 - 0.1, 0.09]} scale={0.13}>
-            <meshStandardMaterial color="#ff5a5a" emissive="#ff2d2d" emissiveIntensity={1.6} toneMapped={false} />
+            <meshStandardMaterial color="#FFCC00" emissive="#FFB800" emissiveIntensity={2.2} toneMapped={false} />
           </mesh>
         )}
-        {/* bảng tên đồng */}
+        {/* bảng tên đỏ Đoàn */}
         <group position={[0, -FRAME_H / 2 - 0.3, 0.02]}>
           <mesh>
             <boxGeometry args={[1.32, 0.42, 0.04]} />
-            <meshStandardMaterial color="#5a3d0c" metalness={0.9} roughness={0.4} />
+            <meshStandardMaterial color="#8b0a0a" metalness={0.8} roughness={0.4} />
           </mesh>
-          <mesh position={[0, 0, 0.022]}>
+          {/* gờ vàng bảng tên */}
+          <mesh position={[0, 0, 0.021]}>
+            <boxGeometry args={[1.34, 0.44, 0.005]} />
+            <meshStandardMaterial color="#d4a73c" metalness={1} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0, 0.026]}>
             <planeGeometry args={[1.26, 0.378]} />
-            <meshStandardMaterial map={plate} metalness={0.6} roughness={0.35} emissiveMap={plate} emissive="#ffffff" emissiveIntensity={0.18} />
+            <meshStandardMaterial map={plate} metalness={0.4} roughness={0.35} emissiveMap={plate} emissive="#ffffff" emissiveIntensity={0.22} />
           </mesh>
         </group>
       </group>

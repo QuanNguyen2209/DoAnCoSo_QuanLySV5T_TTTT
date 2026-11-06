@@ -264,45 +264,57 @@ export default function HonorRollPage() {
 
   return (
     <div className="space-y-8 p-4 md:p-8 max-w-[1400px] mx-auto">
-      {/* ───── BANNER ───── */}
+      {/* ───── BANNER ĐOÀN - HỘI THANH NIÊN VIỆT NAM ───── */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl p-8 md:p-10 relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #fbbf24 60%, #f59e0b 100%)" }}>
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(6)].map((_, i) => (
-            <motion.div key={i} animate={{ y: [-10, 10, -10], opacity: [0.3, 0.7, 0.3] }}
-              transition={{ duration: 3 + i, repeat: Infinity, delay: i * 0.5 }}
-              className="absolute text-4xl"
-              style={{ left: `${15 + i * 15}%`, top: `${20 + (i % 3) * 25}%` }}>⭐</motion.div>
+        className="rounded-3xl p-8 md:p-10 relative overflow-hidden text-white shadow-2xl"
+        style={{ background: "linear-gradient(135deg, #7a0808 0%, #DA251D 50%, #9e1212 100%)", border: "1px solid rgba(255,204,0,0.35)" }}>
+        {/* Hạt sao vàng bay lơ lửng */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          {[...Array(8)].map((_, i) => (
+            <motion.div key={i} animate={{ y: [-12, 12, -12], opacity: [0.3, 0.9, 0.3], rotate: [0, 180, 360] }}
+              transition={{ duration: 4 + i, repeat: Infinity, delay: i * 0.4 }}
+              className="absolute text-3xl text-yellow-300"
+              style={{ left: `${10 + i * 12}%`, top: `${15 + (i % 3) * 30}%` }}>★</motion.div>
           ))}
         </div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-14 h-14 rounded-2xl bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                <Trophy className="w-7 h-7 text-amber-800" />
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg"
+                style={{ background: "linear-gradient(135deg, #FFCC00 0%, #d4a73c 100%)" }}>
+                <Trophy className="w-8 h-8 text-red-900" />
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-extrabold text-amber-900 tracking-tight">Vinh Danh Sinh Viên</h1>
-                <p className="text-amber-800/80 font-medium mt-0.5">Tôn vinh những tấm gương xuất sắc đạt danh hiệu Sinh viên 5 Tốt</p>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-yellow-400 text-red-950">
+                    Phòng Truyền Thống Số
+                  </span>
+                  <span className="text-yellow-300 text-xs font-semibold">★ Đoàn - Hội HUTECH ★</span>
+                </div>
+                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight mt-1">
+                  Bảng Vàng Vinh Danh Sinh Viên 5 Tốt
+                </h1>
+                <p className="text-yellow-100 font-medium mt-1 text-sm">
+                  Tôn vinh những gương mặt tiêu biểu: Đạo đức tốt • Học tập tốt • Thể lực tốt • Tình nguyện tốt • Hội nhập tốt
+                </p>
               </div>
             </div>
-            {/* Không có badge phụ cho roles khác */}
           </div>
-          {/* Stats mini */}
+          {/* Stats mini phong cách đỏ - vàng */}
           {stats && (
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3">
               {[
                 { label: "SV Vinh danh", value: stats.tong_sv_vinh_danh, icon: Users },
                 { label: "Hồ sơ đạt", value: stats.tong_ho_so_approved, icon: Award },
-                { label: "Khoa", value: stats.so_khoa, icon: Building2 },
+                { label: "Khoa tham gia", value: stats.so_khoa, icon: Building2 },
               ].map((s, i) => (
                 <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 + i * 0.1 }}
-                  className="bg-white/30 backdrop-blur-sm rounded-2xl px-5 py-3 text-center min-w-[100px]">
-                  <s.icon className="w-5 h-5 text-amber-800 mx-auto mb-1" />
-                  <div className="text-2xl font-black text-amber-900">{s.value}</div>
-                  <div className="text-xs font-bold text-amber-800/70">{s.label}</div>
+                  className="rounded-2xl px-5 py-3.5 text-center min-w-[110px] backdrop-blur-md border shadow-lg"
+                  style={{ background: "rgba(0,0,0,0.3)", borderColor: "rgba(255,204,0,0.4)" }}>
+                  <s.icon className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                  <div className="text-2xl font-black text-yellow-300">{s.value}</div>
+                  <div className="text-[11px] font-bold text-red-100">{s.label}</div>
                 </motion.div>
               ))}
             </div>

@@ -88,19 +88,22 @@ function ReadySignal({ onReady }: { onReady: () => void }) {
   return null;
 }
 
-// Đèn hắt tường (ít đèn: mỗi đèn thêm vào làm mọi bề mặt tốn thêm 1 lượt tính sáng)
+// Đèn hắt tường màu đỏ-vàng Đoàn (xen kẽ nhau)
 function WallWashLights({ radius }: { radius: number }) {
   const lights = useMemo(
-    () => Array.from({ length: 3 }, (_, i) => {
-      const a = (i / 3) * Math.PI * 2 + Math.PI / 3;
-      return [Math.sin(a) * (radius - 2.4), 5.6, Math.cos(a) * (radius - 2.4)] as Vec3;
+    () => Array.from({ length: 6 }, (_, i) => {
+      const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+      return {
+        pos: [Math.sin(a) * (radius - 2.4), 5.6, Math.cos(a) * (radius - 2.4)] as Vec3,
+        color: i % 2 === 0 ? "#c01010" : "#ffcc00",
+      };
     }),
     [radius]
   );
   return (
     <>
-      {lights.map((p, i) => (
-        <pointLight key={i} position={p} intensity={45} distance={0} decay={2} color="#ffd9a0" />
+      {lights.map((l, i) => (
+        <pointLight key={i} position={l.pos} intensity={35} distance={0} decay={2} color={l.color} />
       ))}
     </>
   );
@@ -227,39 +230,60 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
   const handleSelect = useCallback((s: HonorStudentData) => { setTouring(false); setSelectedStudent(s); }, []);
 
   const hudBtn =
-    "flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900/85 backdrop-blur-md border border-slate-700 hover:border-amber-400 text-white text-xs font-semibold shadow-lg transition-all";
+    "flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl backdrop-blur-md border text-white text-xs font-semibold shadow-lg transition-all hover:scale-105"
+    + " bg-slate-900/85 border-red-900/60 hover:border-yellow-400";
 
   return (
     <div
       ref={containerRef}
-      className={`relative w-full overflow-hidden bg-[#04060d] border border-slate-800 shadow-2xl select-none ${
-        isFullscreen ? "h-screen rounded-none" : "h-[780px] rounded-3xl"
+      className={`relative w-full overflow-hidden border shadow-2xl select-none ${
+        isFullscreen ? "h-screen rounded-none border-0" : "h-[780px] rounded-3xl border-red-900/40"
       }`}
+      style={{ background: "linear-gradient(135deg, #04060d 0%, #0a0d1f 50%, #0d0410 100%)" }}
     >
+      {/* ── Banner đỏ Đoàn phía trên ── */}
+      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none h-1.5 bg-gradient-to-r from-transparent via-red-700 to-transparent opacity-80" />
+
       {/* ── HUD trái: tiêu đề + tìm kiếm ── */}
       <div className="absolute top-5 left-5 z-20 pointer-events-auto flex flex-col gap-2 max-w-[calc(100%-2.5rem)]">
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-slate-900/85 backdrop-blur-md border border-slate-700/80 shadow-lg text-white">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-300 to-yellow-600 flex items-center justify-center text-slate-950 shadow">
-            <Trophy className="w-4 h-4" />
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl backdrop-blur-md border shadow-lg text-white"
+          style={{ background: "rgba(10,5,0,0.88)", borderColor: "rgba(218,37,29,0.5)" }}>
+          {/* Logo ngôi sao Đoàn */}
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow"
+            style={{ background: "linear-gradient(135deg, #DA251D 0%, #8b0a0a 100%)" }}>
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-yellow-300">
+              <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+            </svg>
           </div>
           <div>
-            <h2 className="text-sm font-bold flex items-center gap-1.5 leading-none">
-              Sảnh Vinh Danh 3D <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <h2 className="text-sm font-black flex items-center gap-1.5 leading-none tracking-wide"
+              style={{ color: "#FFCC00" }}>
+              Sảnh Vinh Danh 3D
+              <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
             </h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">Phòng truyền thống Sinh viên 5 Tốt</p>
+            <p className="text-[11px] text-red-300 mt-0.5 font-medium">
+              Đoàn TNCS Hồ Chí Minh — HUTECH
+            </p>
           </div>
-          <span className="ml-2 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-semibold flex items-center gap-1">
+          <span className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1 border"
+            style={{ background: "rgba(218,37,29,0.15)", borderColor: "rgba(218,37,29,0.5)", color: "#ff9090" }}>
             <Users className="w-3 h-3" /> {filteredStudents.length} gương mặt
           </span>
         </div>
         <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-red-400" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setSelectedStudent(null); }}
             placeholder="Tìm theo tên, MSSV, lớp, khoa..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/80 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
+            className="w-full pl-9 pr-3 py-2 rounded-xl backdrop-blur-md text-xs text-white placeholder-slate-500 focus:outline-none"
+            style={{
+              background: "rgba(10,5,0,0.82)",
+              border: "1px solid rgba(218,37,29,0.4)",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "#FFCC00")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(218,37,29,0.4)")}
           />
         </div>
       </div>
@@ -267,43 +291,49 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
       {/* ── HUD phải: điều khiển ── */}
       <div className={`absolute z-20 pointer-events-auto flex flex-wrap gap-2 left-5 top-[8.5rem] lg:left-auto lg:top-5 lg:justify-end ${selectedStudent ? "hidden lg:flex lg:right-[28.5rem]" : "lg:right-5"}`}>
         <button onClick={goHome} className={hudBtn} title="Về toàn cảnh (Esc)">
-          <RotateCcw className="w-3.5 h-3.5 text-amber-400" /> Toàn cảnh
+          <RotateCcw className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} /> Toàn cảnh
         </button>
         <button onClick={() => setTouring((t) => !t)} className={hudBtn} disabled={filteredStudents.length === 0}>
-          {touring ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-amber-400" />}
+          {touring ? <Pause className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} /> : <Play className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} />}
           {touring ? "Dừng tham quan" : "Tham quan tự động"}
         </button>
-        <button onClick={celebrate} className={hudBtn} title="Bắn pháo giấy">
-          <PartyPopper className="w-3.5 h-3.5 text-amber-400" />
+        <button onClick={celebrate} className={hudBtn} title="Bắn pháo giấy 🎉">
+          <PartyPopper className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} />
         </button>
         <button onClick={toggleQuality} className={hudBtn} title="Chất lượng đồ hoạ">
-          <Gauge className="w-3.5 h-3.5 text-amber-400" /> {quality === "high" ? "Chất lượng cao" : "Tiêu chuẩn"}
+          <Gauge className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} /> {quality === "high" ? "Chất lượng cao" : "Tiêu chuẩn"}
         </button>
         <button onClick={toggleFullscreen} className={hudBtn} title="Toàn màn hình">
-          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5 text-amber-400" />}
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} /> : <Maximize2 className="w-3.5 h-3.5" style={{ color: "#FFCC00" }} />}
         </button>
       </div>
 
       {/* ── Hướng dẫn ── */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-none hidden md:block">
-        <div className="px-5 py-2 rounded-full bg-slate-950/75 backdrop-blur-md border border-slate-800 text-[11px] text-slate-400 flex items-center gap-3 shadow-lg whitespace-nowrap">
-          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Kéo để xoay</span>
+        <div className="px-5 py-2 rounded-full backdrop-blur-md border text-[11px] text-slate-400 flex items-center gap-3 shadow-lg whitespace-nowrap"
+          style={{ background: "rgba(6,2,0,0.78)", borderColor: "rgba(218,37,29,0.3)" }}>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#DA251D" }} />
+            Kéo để xoay
+          </span>
           <span>•</span><span>Cuộn để zoom</span>
           <span>•</span><span>Nhấp đúp lên sàn để đi tới</span>
           <span>•</span><span>← → chuyển sinh viên</span>
-          <span>•</span><span className="text-amber-300 font-medium">Bấm khung ảnh để xem chi tiết • Bấm cúp để ăn mừng 🎉</span>
+          <span>•</span>
+          <span className="font-medium" style={{ color: "#FFCC00" }}>Bấm khung ảnh xem chi tiết • Bấm cúp để ăn mừng 🎉</span>
         </div>
       </div>
 
       {notice && (
-        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl bg-amber-500/90 text-slate-950 text-xs font-semibold shadow-lg">
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl text-xs font-semibold shadow-lg"
+          style={{ background: "rgba(218,37,29,0.92)", color: "#fff1b8" }}>
           {notice}
         </div>
       )}
 
       {filteredStudents.length === 0 && (
         <div className="absolute inset-x-0 top-1/3 z-10 text-center pointer-events-none">
-          <p className="text-slate-300 font-semibold">Không tìm thấy sinh viên phù hợp trong sảnh</p>
+          <p className="font-semibold" style={{ color: "#FFCC00" }}>Không tìm thấy sinh viên phù hợp trong sảnh</p>
         </div>
       )}
 
@@ -322,23 +352,27 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
         gl={{ antialias: true, powerPreference: "high-performance" }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.05;
+          gl.toneMappingExposure = 1.1;
         }}
         className="w-full h-full cursor-grab active:cursor-grabbing"
       >
         <color attach="background" args={["#04060d"]} />
-        <ambientLight intensity={0.3} />
-        <hemisphereLight args={["#c3ccff", "#24160a", 0.5]} />
+        <ambientLight intensity={0.25} />
+        {/* Ánh sáng bầu trời: đỏ ấm bên trên + xanh lạnh bên dưới (tông Đoàn) */}
+        <hemisphereLight args={["#c0c8ff", "#2a0808", 0.45]} />
         {quality === "high" && <QualityGuard onTooSlow={handleTooSlow} />}
         <AdaptiveDpr pixelated />
         <WallWashLights radius={layout.radius} />
 
         <Suspense fallback={null}>
-          {/* Phản chiếu "studio" dựng tại chỗ bằng Lightformer — không cần tải HDRI từ mạng */}
-          <Environment resolution={256} frames={1} environmentIntensity={1.3}>
-            <Lightformer form="ring" intensity={4} color="#fff1d0" scale={8} position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]} />
-            <Lightformer form="rect" intensity={2.2} color="#ffd88a" scale={[30, 2, 1]} position={[0, 5, -14]} />
-            <Lightformer form="rect" intensity={1.4} color="#9fb4ff" scale={[30, 2, 1]} position={[0, 5, 14]} rotation={[0, Math.PI, 0]} />
+          {/* Môi trường phản chiếu (không tải HDRI mạng) */}
+          <Environment resolution={256} frames={1} environmentIntensity={1.2}>
+            {/* Ánh vàng từ trên */}
+            <Lightformer form="ring" intensity={4.5} color="#ffe8a0" scale={8} position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]} />
+            {/* Ánh đỏ Đoàn từ trước */}
+            <Lightformer form="rect" intensity={2.5} color="#ff6060" scale={[30, 2, 1]} position={[0, 5, -14]} />
+            {/* Ánh xanh Đoàn từ sau */}
+            <Lightformer form="rect" intensity={1.8} color="#4080ff" scale={[30, 2, 1]} position={[0, 5, 14]} rotation={[0, Math.PI, 0]} />
             <Lightformer form="rect" intensity={1.4} color="#ffffff" scale={[2, 9, 1]} position={[14, 4, 0]} rotation={[0, -Math.PI / 2, 0]} />
             <Lightformer form="rect" intensity={1.4} color="#ffffff" scale={[2, 9, 1]} position={[-14, 4, 0]} rotation={[0, Math.PI / 2, 0]} />
           </Environment>
@@ -385,20 +419,37 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
       </Canvas>
 
       {!sceneReady && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-[#04060d]/95 text-amber-100 pointer-events-none">
-          <div className="w-10 h-10 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
-          <p className="text-sm font-semibold">Đang chuẩn bị sảnh vinh danh…</p>
-          <p className="text-xs text-slate-400">Lần đầu mở có thể mất vài giây trên máy dùng card đồ hoạ tích hợp</p>
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 pointer-events-none"
+          style={{ background: "rgba(4,2,0,0.95)" }}>
+          {/* Spinner màu đỏ-vàng Đoàn */}
+          <div className="relative w-14 h-14">
+            <div className="absolute inset-0 rounded-full border-2 border-red-900 border-t-red-500 animate-spin" />
+            <div className="absolute inset-2 rounded-full border-2 border-yellow-900 border-t-yellow-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "0.7s" }} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-yellow-400">
+                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-sm font-black tracking-widest uppercase" style={{ color: "#FFCC00" }}>
+            Đang chuẩn bị sảnh vinh danh…
+          </p>
+          <p className="text-xs" style={{ color: "#c0a0a0" }}>
+            Đoàn TNCS Hồ Chí Minh — Hội Sinh viên HUTECH
+          </p>
         </div>
       )}
 
       <Loader
-        containerStyles={{ background: "rgba(4, 6, 13, 0.96)" }}
-        innerStyles={{ width: "240px", backgroundColor: "#1e1b4b" }}
-        barStyles={{ backgroundColor: "#fbbf24" }}
-        dataStyles={{ color: "#fef3c7", fontSize: "12px", fontWeight: "bold" }}
+        containerStyles={{ background: "rgba(4,2,0,0.97)" }}
+        innerStyles={{ width: "240px", backgroundColor: "#1a0005" }}
+        barStyles={{ backgroundColor: "#DA251D" }}
+        dataStyles={{ color: "#FFCC00", fontSize: "12px", fontWeight: "bold" }}
         dataInterpolation={(p) => `Đang dựng sảnh vinh danh... ${p.toFixed(0)}%`}
       />
+
+      {/* ── Dải trang trí đáy ── */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none h-1 bg-gradient-to-r from-transparent via-yellow-600 to-transparent opacity-50" />
     </div>
   );
 }
