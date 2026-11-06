@@ -8,12 +8,15 @@ import { useFrame } from "@react-three/fiber";
 import { Billboard, Float, Sparkles, useCursor } from "@react-three/drei";
 import { createLabelTexture } from "./textures";
 
+// Dùng MeshStandardMaterial cho mọi vật liệu: ít biến thể shader hơn → lần đầu mở sảnh nhanh hơn nhiều
+// trên card đồ hoạ tích hợp (Windows/ANGLE biên dịch shader rất chậm).
 const GOLD_PHYSICAL = {
-  color: "#f2c14e",
+  color: "#ffcf57",
   metalness: 1,
-  roughness: 0.16,
-  clearcoat: 1,
-  clearcoatRoughness: 0.08,
+  roughness: 0.3, // đủ nhám để bắt sáng từ môi trường (quá bóng sẽ phản chiếu nền tối → trông đen)
+  envMapIntensity: 2.4,
+  emissive: "#4a2e00",
+  emissiveIntensity: 0.5,
 } as const;
 
 export const SV5T_CRITERIA = [
@@ -78,23 +81,23 @@ function Trophy({ onClick }: { onClick: () => void }) {
       onPointerOut={() => setHovered(false)}
     >
       {/* đế đá đen viền vàng */}
-      <mesh position={[0, 0.14, 0]} castShadow>
+      <mesh position={[0, 0.14, 0]}>
         <boxGeometry args={[0.82, 0.28, 0.82]} />
-        <meshPhysicalMaterial color="#0b0b10" roughness={0.15} metalness={0.4} clearcoat={1} />
+        <meshStandardMaterial color="#0b0b10" roughness={0.15} metalness={0.4} />
       </mesh>
-      <mesh position={[0, 0.3, 0]} castShadow>
+      <mesh position={[0, 0.3, 0]}>
         <boxGeometry args={[0.62, 0.05, 0.62]} />
-        <meshPhysicalMaterial {...GOLD_PHYSICAL} />
+        <meshStandardMaterial {...GOLD_PHYSICAL} />
       </mesh>
       {/* thân + miệng cúp */}
-      <mesh geometry={cupGeometry} position={[0, 0.32, 0]} castShadow>
-        <meshPhysicalMaterial {...GOLD_PHYSICAL} side={THREE.DoubleSide} />
+      <mesh geometry={cupGeometry} position={[0, 0.32, 0]}>
+        <meshStandardMaterial {...GOLD_PHYSICAL} side={THREE.DoubleSide} />
       </mesh>
       {/* 2 quai cúp */}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.47, 1.36, 0]} rotation={[0, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2]} castShadow>
+        <mesh key={s} position={[s * 0.47, 1.36, 0]} rotation={[0, 0, s > 0 ? -Math.PI / 2 : Math.PI / 2]}>
           <torusGeometry args={[0.24, 0.035, 12, 32, Math.PI]} />
-          <meshPhysicalMaterial {...GOLD_PHYSICAL} />
+          <meshStandardMaterial {...GOLD_PHYSICAL} />
         </mesh>
       ))}
       {/* ngôi sao phát sáng */}
@@ -118,7 +121,7 @@ function CriterionPillar({ angle, name, color }: { angle: number; name: string; 
   });
   return (
     <group position={[Math.sin(angle) * r, 0, Math.cos(angle) * r]}>
-      <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.5, 0]}>
         <cylinderGeometry args={[0.26, 0.32, 1, 6]} />
         <meshStandardMaterial color="#e8e2d4" roughness={0.35} />
       </mesh>
@@ -129,9 +132,8 @@ function CriterionPillar({ angle, name, color }: { angle: number; name: string; 
       <Float speed={2} floatIntensity={0.4} rotationIntensity={0}>
         <mesh ref={crystal} position={[0, 1.5, 0]}>
           <icosahedronGeometry args={[0.2, 0]} />
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.2} toneMapped={false} flatShading />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.2} toneMapped={false} />
         </mesh>
-        <pointLight position={[0, 1.5, 0]} color={color} intensity={4} distance={3} decay={2} />
       </Float>
       <Billboard position={[0, 2.05, 0]}>
         <mesh>
@@ -174,21 +176,21 @@ function TrophyPodium({ onCelebrate }: { onCelebrate: () => void }) {
   return (
     <group>
       {/* bục 3 tầng */}
-      <mesh position={[0, 0.15, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.15, 0]}>
         <cylinderGeometry args={[2.45, 2.55, 0.3, 64]} />
-        <meshPhysicalMaterial color="#14151d" roughness={0.18} metalness={0.3} clearcoat={0.8} />
+        <meshStandardMaterial color="#14151d" roughness={0.18} metalness={0.3} />
       </mesh>
       <mesh position={[0, 0.3, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[2.46, 0.03, 8, 128]} />
         <meshStandardMaterial color="#d4a73c" metalness={1} roughness={0.25} />
       </mesh>
-      <mesh position={[0, 0.475, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.475, 0]}>
         <cylinderGeometry args={[1.75, 1.8, 0.35, 64]} />
-        <meshPhysicalMaterial color="#ece7dc" roughness={0.25} clearcoat={0.6} />
+        <meshStandardMaterial color="#ece7dc" roughness={0.25} />
       </mesh>
-      <mesh position={[0, 0.85, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.85, 0]}>
         <cylinderGeometry args={[1.1, 1.15, 0.4, 64]} />
-        <meshPhysicalMaterial color="#111a3d" roughness={0.2} metalness={0.4} clearcoat={1} />
+        <meshStandardMaterial color="#111a3d" roughness={0.2} metalness={0.4} />
       </mesh>
       <mesh position={[0, 1.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[1.1, 0.025, 8, 128]} />
@@ -210,6 +212,7 @@ function TrophyPodium({ onCelebrate }: { onCelebrate: () => void }) {
         <CriterionPillar key={c.name} angle={pillarAngles[i]} name={c.name} color={c.color} />
       ))}
 
+      <pointLight position={[0, 3.4, 2.6]} intensity={14} distance={0} decay={2} color="#ffe6b0" />
       {/* đèn rọi chính từ giếng trời xuống cúp */}
       <spotLight
         position={[0, 10, 0]}
@@ -219,10 +222,6 @@ function TrophyPodium({ onCelebrate }: { onCelebrate: () => void }) {
         distance={0}
         decay={2}
         color="#fff1d0"
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-        shadow-bias={-0.0004}
       />
     </group>
   );

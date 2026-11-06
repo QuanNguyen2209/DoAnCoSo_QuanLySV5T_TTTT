@@ -1,10 +1,10 @@
 "use client";
 
 // Sảnh Vinh Danh 3D — sảnh tròn kiểu bảo tàng
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
-import { Environment, Lightformer, Loader } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { AdaptiveDpr, Environment, Lightformer, Loader } from "@react-three/drei";
 import HallArchitecture from "./HallArchitecture";
 import TrophyPodium from "./TrophyPodium";
 import HonorFrame3D, { EmptyFrame3D, type HonorStudentData } from "./HonorFrame3D";
@@ -23,23 +23,76 @@ type Quality = "high" | "standard";
 const QUALITY_KEY = "sv5t_hall_quality";
 const TOUR_INTERVAL_MS = 6000;
 
-// Đèn rọi đi theo khung ảnh đang được chọn
-function SelectedSpot({ slot }: { slot: FrameSlot }) {
+// Đèn rọi đi theo khung ảnh đang được chọn.
+// LUÔN gắn sẵn trong cảnh (chỉ tắt bằng intensity = 0): thêm/bớt đèn làm three.js biên dịch lại
+// shader của MỌI vật liệu → cảnh khựng vài giây mỗi lần bấm chọn.
+function SelectedSpot({ slot }: { slot: FrameSlot | null }) {
   const target = useMemo(() => new THREE.Object3D(), []);
-  const position = useMemo<Vec3>(() => [slot.pos[0] * 0.72, slot.pos[1] + 2.6, slot.pos[2] * 0.72], [slot]);
+  const pos = slot?.pos ?? ([0, 0, 0] as Vec3);
+  const position = useMemo<Vec3>(() => [pos[0] * 0.72, pos[1] + 2.6, pos[2] * 0.72], [pos]);
   return (
     <>
-      <primitive object={target} position={slot.pos} />
-      <spotLight position={position} target={target} angle={0.32} penumbra={0.85} intensity={70} distance={0} decay={2} color="#fff3d6" />
+      <primitive object={target} position={pos} />
+      <spotLight position={position} target={target} angle={0.32} penumbra={0.85} intensity={slot ? 70 : 0} distance={0} decay={2} color="#fff3d6" />
     </>
   );
 }
 
-// Đèn hắt tường xung quanh sảnh
+// Bảo vệ chế độ "Chất lượng cao": nếu máy không kéo nổi (< 24 FPS trong 4 giây) thì tự về "Tiêu chuẩn".
+// Dùng setInterval thay vì đo trong useFrame vì khi quá nặng, khung hình gần như dừng hẳn.
+function QualityGuard({ onTooSlow }: { onTooSlow: () => void }) {
+  const frames = useRef(0);
+  useFrame(() => { frames.current += 1; });
+  useEffect(() => {
+    const started = performance.now();
+    frames.current = 0;
+    const timer = setInterval(() => {
+      const elapsed = (performance.now() - started) / 1000;
+      if (elapsed < 4) return;
+      clearInterval(timer);
+      if (frames.current / elapsed < 24) onTooSlow();
+    }, 500);
+    return () => clearInterval(timer);
+  }, [onTooSlow]);
+  return null;
+}
+
+// Biên dịch trước TOÀN BỘ shader song song (KHR_parallel_shader_compile) rồi mới chạy vòng lặp vẽ.
+// Nếu không, khung hình đầu buộc GPU biên dịch tuần tự từng shader → trên card tích hợp (Windows/ANGLE)
+// trang bị đơ hàng chục giây. Đặt component này CUỐI cảnh để Environment đã gắn envMap.
+function ShaderWarmUp({ onDone }: { onDone: () => void }) {
+  const { gl, scene, camera } = useThree();
+  useLayoutEffect(() => {
+    let finished = false;
+    const finish = () => { if (!finished) { finished = true; onDone(); } };
+    const fallback = setTimeout(finish, 20000); // không chờ quá 20 giây
+    const t = setTimeout(() => {
+      const r = gl as unknown as { compileAsync?: (s: unknown, c: unknown) => Promise<unknown> };
+      if (typeof r.compileAsync === "function") r.compileAsync(scene, camera).catch(() => {}).finally(finish);
+      else finish();
+    }, 0);
+    return () => { clearTimeout(t); clearTimeout(fallback); };
+  }, [gl, scene, camera, onDone]);
+  return null;
+}
+
+// Báo cho giao diện khi cảnh đã vẽ trơn tru (lần đầu GPU phải biên dịch shader, có thể mất vài giây)
+function ReadySignal({ onReady }: { onReady: () => void }) {
+  const frames = useRef(0);
+  const done = useRef(false);
+  useFrame(() => {
+    if (done.current) return;
+    frames.current += 1;
+    if (frames.current > 8) { done.current = true; onReady(); }
+  });
+  return null;
+}
+
+// Đèn hắt tường (ít đèn: mỗi đèn thêm vào làm mọi bề mặt tốn thêm 1 lượt tính sáng)
 function WallWashLights({ radius }: { radius: number }) {
   const lights = useMemo(
-    () => Array.from({ length: 6 }, (_, i) => {
-      const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
+    () => Array.from({ length: 3 }, (_, i) => {
+      const a = (i / 3) * Math.PI * 2 + Math.PI / 3;
       return [Math.sin(a) * (radius - 2.4), 5.6, Math.cos(a) * (radius - 2.4)] as Vec3;
     }),
     [radius]
@@ -47,7 +100,7 @@ function WallWashLights({ radius }: { radius: number }) {
   return (
     <>
       {lights.map((p, i) => (
-        <pointLight key={i} position={p} intensity={26} distance={0} decay={2} color="#ffd9a0" />
+        <pointLight key={i} position={p} intensity={45} distance={0} decay={2} color="#ffd9a0" />
       ))}
     </>
   );
@@ -57,7 +110,13 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedStudent, setSelectedStudent] = useState<HonorStudentData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [quality, setQuality] = useState<Quality>("high");
+  // Mặc định "Tiêu chuẩn" (chạy mượt cả trên laptop đồ hoạ tích hợp); "Chất lượng cao" bật thêm sàn gương + bloom
+  const [quality, setQuality] = useState<Quality>("standard");
+  const [notice, setNotice] = useState<string | null>(null);
+  const [sceneReady, setSceneReady] = useState(false);
+  const [warmedUp, setWarmedUp] = useState(false);
+  const markWarm = useCallback(() => setWarmedUp(true), []);
+  const markReady = useCallback(() => setSceneReady(true), []);
   const [touring, setTouring] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [burstKey, setBurstKey] = useState(0);
@@ -74,6 +133,7 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
   }, []);
   const toggleQuality = () => {
     const next: Quality = quality === "high" ? "standard" : "high";
+    setNotice(null);
     setQuality(next);
     try { localStorage.setItem(QUALITY_KEY, next); } catch { /* bỏ qua */ }
   };
@@ -151,6 +211,13 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
     else containerRef.current?.requestFullscreen?.().catch(() => {});
   };
 
+  const handleTooSlow = useCallback(() => {
+    setQuality("standard");
+    try { localStorage.setItem(QUALITY_KEY, "standard"); } catch { /* bỏ qua */ }
+    setNotice("Máy chạy chưa đủ mượt ở Chất lượng cao nên đã tự chuyển về Tiêu chuẩn.");
+    setTimeout(() => setNotice(null), 6000);
+  }, []);
+
   const handleFloorDoubleClick = useCallback((point: Vec3) => {
     setTouring(false);
     setAutoSpin(false);
@@ -198,7 +265,7 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
       </div>
 
       {/* ── HUD phải: điều khiển ── */}
-      <div className={`absolute top-5 z-20 pointer-events-auto flex flex-wrap justify-end gap-2 ${selectedStudent ? "right-[28.5rem] hidden lg:flex" : "right-5"}`}>
+      <div className={`absolute z-20 pointer-events-auto flex flex-wrap gap-2 left-5 top-[8.5rem] lg:left-auto lg:top-5 lg:justify-end ${selectedStudent ? "hidden lg:flex lg:right-[28.5rem]" : "lg:right-5"}`}>
         <button onClick={goHome} className={hudBtn} title="Về toàn cảnh (Esc)">
           <RotateCcw className="w-3.5 h-3.5 text-amber-400" /> Toàn cảnh
         </button>
@@ -228,6 +295,12 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
         </div>
       </div>
 
+      {notice && (
+        <div className="absolute top-5 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-xl bg-amber-500/90 text-slate-950 text-xs font-semibold shadow-lg">
+          {notice}
+        </div>
+      )}
+
       {filteredStudents.length === 0 && (
         <div className="absolute inset-x-0 top-1/3 z-10 text-center pointer-events-none">
           <p className="text-slate-300 font-semibold">Không tìm thấy sinh viên phù hợp trong sảnh</p>
@@ -243,7 +316,7 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
 
       {/* ── Cảnh 3D ── */}
       <Canvas
-        shadows
+        frameloop={warmedUp ? "always" : "never"}
         dpr={quality === "high" ? [1, 1.75] : [1, 1.25]}
         camera={{ position: layout.homeCamera, fov: 55, near: 0.1, far: 200 }}
         gl={{ antialias: true, powerPreference: "high-performance" }}
@@ -254,13 +327,15 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
         className="w-full h-full cursor-grab active:cursor-grabbing"
       >
         <color attach="background" args={["#04060d"]} />
-        <ambientLight intensity={0.22} />
-        <hemisphereLight args={["#c3ccff", "#24160a", 0.35]} />
+        <ambientLight intensity={0.3} />
+        <hemisphereLight args={["#c3ccff", "#24160a", 0.5]} />
+        {quality === "high" && <QualityGuard onTooSlow={handleTooSlow} />}
+        <AdaptiveDpr pixelated />
         <WallWashLights radius={layout.radius} />
 
         <Suspense fallback={null}>
           {/* Phản chiếu "studio" dựng tại chỗ bằng Lightformer — không cần tải HDRI từ mạng */}
-          <Environment resolution={256} frames={1}>
+          <Environment resolution={256} frames={1} environmentIntensity={1.3}>
             <Lightformer form="ring" intensity={4} color="#fff1d0" scale={8} position={[0, 12, 0]} rotation={[Math.PI / 2, 0, 0]} />
             <Lightformer form="rect" intensity={2.2} color="#ffd88a" scale={[30, 2, 1]} position={[0, 5, -14]} />
             <Lightformer form="rect" intensity={1.4} color="#9fb4ff" scale={[30, 2, 1]} position={[0, 5, 14]} rotation={[0, Math.PI, 0]} />
@@ -293,7 +368,9 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
           {layout.emptySlots.map((slot) => (
             <EmptyFrame3D key={`empty-${slot.angle.toFixed(4)}`} slot={slot} />
           ))}
-          {selectedSlot && <SelectedSpot slot={selectedSlot} />}
+          <SelectedSpot slot={selectedSlot} />
+          <ReadySignal onReady={markReady} />
+          <ShaderWarmUp onDone={markWarm} />
 
           {quality === "high" && <Effects />}
         </Suspense>
@@ -306,6 +383,14 @@ export default function Honor3DGallery({ students }: { students: HonorStudentDat
           autoRotate={autoSpin && !selectedStudent && !touring}
         />
       </Canvas>
+
+      {!sceneReady && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-3 bg-[#04060d]/95 text-amber-100 pointer-events-none">
+          <div className="w-10 h-10 rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
+          <p className="text-sm font-semibold">Đang chuẩn bị sảnh vinh danh…</p>
+          <p className="text-xs text-slate-400">Lần đầu mở có thể mất vài giây trên máy dùng card đồ hoạ tích hợp</p>
+        </div>
+      )}
 
       <Loader
         containerStyles={{ background: "rgba(4, 6, 13, 0.96)" }}

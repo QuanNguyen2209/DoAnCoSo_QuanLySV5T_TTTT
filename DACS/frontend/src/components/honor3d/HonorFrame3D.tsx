@@ -142,7 +142,7 @@ function HonorFrame3D({ student, slot, isSelected, onSelect }: FrameProps) {
           <meshBasicMaterial ref={glow} color={[3, 2.2, 0.7]} transparent opacity={0} toneMapped={false} depthWrite={false} />
         </mesh>
         {/* khung vàng */}
-        <mesh geometry={getFrameGeometry()} castShadow>
+        <mesh geometry={getFrameGeometry()}>
           <meshStandardMaterial color="#d6a93f" metalness={1} roughness={0.22} />
         </mesh>
         {/* viền giấy passe-partout */}
@@ -169,7 +169,7 @@ function HonorFrame3D({ student, slot, isSelected, onSelect }: FrameProps) {
         )}
         {/* bảng tên đồng */}
         <group position={[0, -FRAME_H / 2 - 0.3, 0.02]}>
-          <mesh castShadow>
+          <mesh>
             <boxGeometry args={[1.32, 0.42, 0.04]} />
             <meshStandardMaterial color="#5a3d0c" metalness={0.9} roughness={0.4} />
           </mesh>

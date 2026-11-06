@@ -12,8 +12,8 @@ export const HALL = {
   cameraDistance: 3.3,       // khoảng cách máy quay đứng trước khung khi xem
 };
 
-export const HOME_CAMERA: Vec3 = [0, 3.2, 0]; // sẽ đặt z theo bán kính
-export const HOME_TARGET: Vec3 = [0, 1.7, 0];
+export const HOME_CAMERA: Vec3 = [0, 4.3, 0]; // z đặt theo bán kính sảnh
+export const HOME_TARGET: Vec3 = [0, 1.9, 0];
 
 export interface FrameSlot {
   index: number;   // thứ tự trong danh sách sinh viên (-1 = ô trống)
@@ -86,6 +86,6 @@ export function computeHallLayout(count: number): HallLayout {
     slots,
     emptySlots,
     columnAngles,
-    homeCamera: [0, HOME_CAMERA[1], radius - 2.2],
+    homeCamera: [0, HOME_CAMERA[1], radius - 1.4],
   };
 }

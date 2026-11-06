@@ -33,7 +33,7 @@ function Column({ angle, radius, height }: { angle: number; radius: number; heig
   return (
     <group position={[Math.sin(angle) * r, 0, Math.cos(angle) * r]}>
       {/* chân cột */}
-      <mesh position={[0, 0.12, 0]} castShadow receiveShadow>
+      <mesh position={[0, 0.12, 0]}>
         <boxGeometry args={[0.78, 0.24, 0.78]} />
         <meshStandardMaterial color="#d9d4c7" roughness={0.45} />
       </mesh>
@@ -46,9 +46,9 @@ function Column({ angle, radius, height }: { angle: number; radius: number; heig
         <meshStandardMaterial {...GOLD} />
       </mesh>
       {/* thân cột (nhiều cạnh tạo cảm giác rãnh khía) */}
-      <mesh position={[0, height / 2, 0]} castShadow>
+      <mesh position={[0, height / 2, 0]}>
         <cylinderGeometry args={[0.22, 0.25, height - 1, 20]} />
-        <meshStandardMaterial color="#efeae0" roughness={0.38} flatShading />
+        <meshStandardMaterial color="#efeae0" roughness={0.38} />
       </mesh>
       {/* đầu cột */}
       <mesh position={[0, height - 0.42, 0]} rotation={[Math.PI / 2, 0, 0]}>
@@ -68,7 +68,7 @@ function Column({ angle, radius, height }: { angle: number; radius: number; heig
         <group position={[0, 0, 0.27]}>
           <mesh>
             <coneGeometry args={[0.11, 0.24, 16, 1, true]} />
-            <meshStandardMaterial {...GOLD} side={THREE.DoubleSide} />
+            <meshStandardMaterial {...GOLD} />
           </mesh>
           <mesh position={[0, 0.08, 0]}>
             <sphereGeometry args={[0.07, 12, 12]} />
@@ -87,7 +87,7 @@ function Stanchion({ position }: { position: [number, number, number] }) {
         <cylinderGeometry args={[0.16, 0.18, 0.06, 24]} />
         <meshStandardMaterial {...GOLD} />
       </mesh>
-      <mesh position={[0, 0.48, 0]} castShadow>
+      <mesh position={[0, 0.48, 0]}>
         <cylinderGeometry args={[0.03, 0.03, 0.9, 12]} />
         <meshStandardMaterial {...GOLD} />
       </mesh>
@@ -159,15 +159,15 @@ function HallArchitecture({ radius, wallHeight, columnAngles, quality, onFloorDo
   return (
     <group>
       {/* ── SÀN ── */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow onDoubleClick={handleDoubleClick}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} onDoubleClick={handleDoubleClick}>
         <circleGeometry args={[radius, 128]} />
         {quality === "high" ? (
           <MeshReflectorMaterial
             map={marble}
-            blur={[400, 120]}
-            resolution={1024}
+            blur={[300, 80]}
+            resolution={512}
             mixBlur={1}
-            mixStrength={28}
+            mixStrength={22}
             mirror={0.55}
             depthScale={1.1}
             minDepthThreshold={0.4}
@@ -189,7 +189,7 @@ function HallArchitecture({ radius, wallHeight, columnAngles, quality, onFloorDo
       ))}
 
       {/* ── TƯỜNG ── */}
-      <mesh position={[0, wallHeight / 2, 0]} receiveShadow>
+      <mesh position={[0, wallHeight / 2, 0]}>
         <cylinderGeometry args={[radius, radius, wallHeight, 160, 1, true]} />
         <meshStandardMaterial map={wall} roughness={0.85} side={THREE.BackSide} />
       </mesh>
@@ -257,7 +257,7 @@ function HallArchitecture({ radius, wallHeight, columnAngles, quality, onFloorDo
       {/* ── CỬA CHÍNH ── */}
       <group position={[0, 0, radius - 0.08]} rotation={[0, Math.PI, 0]}>
         {[-0.68, 0.68].map((x) => (
-          <mesh key={x} position={[x, 1.8, 0]} castShadow>
+          <mesh key={x} position={[x, 1.8, 0]}>
             <boxGeometry args={[1.3, 3.6, 0.1]} />
             <meshStandardMaterial color="#3b1f0f" roughness={0.5} />
           </mesh>
@@ -279,7 +279,7 @@ function HallArchitecture({ radius, wallHeight, columnAngles, quality, onFloorDo
       </group>
 
       {/* ── THẢM ĐỎ + DÂY NHUNG ── */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, (carpetStart + carpetEnd) / 2]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, (carpetStart + carpetEnd) / 2]}>
         <planeGeometry args={[2, carpetLength]} />
         <meshStandardMaterial map={carpet} roughness={0.95} />
       </mesh>
