@@ -1,17 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Image as DreiImage, Html } from "@react-three/drei";
+// Khung chân dung vinh danh: khung vàng đắp nổi, viền passe-partout, đèn rọi tranh,
+// bảng tên đồng, huy hiệu sao cho SV đạt nhiều lần. Hover/chọn → khung nhô ra & sáng lên.
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Trophy, Award } from "lucide-react";
+import { useFrame } from "@react-three/fiber";
+import { useCursor } from "@react-three/drei";
+import { easing } from "maath";
+import { createNameplateTexture, createPortraitTexture, createLabelTexture } from "./textures";
+import { getStarGeometry } from "./TrophyPodium";
+import type { FrameSlot } from "./hallLayout";
 
 export interface HonorStudentData {
   sinh_vien: {
     id: number;
     ho_ten: string;
     ma_sv: string;
-    email: string;
+    email?: string;
     avatar_url: string | null;
     lop: { id: number; ma_lop: string; ten_lop: string } | null;
     khoa: { id: number; ma_khoa: string; ten_khoa: string } | null;
@@ -28,194 +33,171 @@ export interface HonorStudentData {
   }[];
 }
 
-interface HonorFrame3DProps {
+const FRAME_W = 1.5;
+const FRAME_H = 1.86;
+const BORDER = 0.13;
+
+// Khung vàng đùn nổi có vát cạnh — dùng chung 1 geometry cho mọi khung
+let frameGeometry: THREE.ExtrudeGeometry | null = null;
+function getFrameGeometry() {
+  if (!frameGeometry) {
+    const w = FRAME_W / 2, h = FRAME_H / 2, b = BORDER;
+    const shape = new THREE.Shape();
+    shape.moveTo(-w, -h); shape.lineTo(w, -h); shape.lineTo(w, h); shape.lineTo(-w, h); shape.lineTo(-w, -h);
+    const hole = new THREE.Path();
+    hole.moveTo(-w + b, -h + b); hole.lineTo(-w + b, h - b); hole.lineTo(w - b, h - b); hole.lineTo(w - b, -h + b); hole.lineTo(-w + b, -h + b);
+    shape.holes.push(hole);
+    frameGeometry = new THREE.ExtrudeGeometry(shape, {
+      depth: 0.06, bevelEnabled: true, bevelThickness: 0.035, bevelSize: 0.035, bevelSegments: 4, curveSegments: 4,
+    });
+    frameGeometry.translate(0, 0, -0.03);
+  }
+  return frameGeometry;
+}
+
+// Quầng sáng hình nón của đèn rọi tranh (giả lập ánh sáng thể tích, rẻ hơn đèn thật)
+function useLightConeMaterial() {
+  return useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 4; c.height = 128;
+    const ctx = c.getContext("2d")!;
+    const g = ctx.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, "rgba(255,230,170,0.55)");
+    g.addColorStop(1, "rgba(255,230,170,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 4, 128);
+    const tex = new THREE.CanvasTexture(c);
+    return new THREE.MeshBasicMaterial({
+      map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, opacity: 0.55,
+    });
+  }, []);
+}
+
+function PictureLight({ active }: { active: boolean }) {
+  const cone = useLightConeMaterial();
+  useEffect(() => () => { cone.map?.dispose(); cone.dispose(); }, [cone]);
+  useEffect(() => { cone.opacity = active ? 0.9 : 0.5; }, [active, cone]);
+  return (
+    <group position={[0, FRAME_H / 2 + 0.16, 0.18]}>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.035, 0.035, 0.75, 16]} />
+        <meshStandardMaterial color="#c79a3a" metalness={1} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, -0.03, 0.02]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.012, 0.012, 0.7, 8]} />
+        <meshBasicMaterial color={[4, 3.2, 2]} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -0.12, -0.12]} rotation={[0.55, 0, 0]}>
+        <boxGeometry args={[0.04, 0.24, 0.03]} />
+        <meshStandardMaterial color="#c79a3a" metalness={1} roughness={0.3} />
+      </mesh>
+      {/* nón sáng chiếu xuống mặt tranh */}
+      <mesh position={[0, -0.85, 0.12]} rotation={[-0.16, 0, 0]} material={cone}>
+        <coneGeometry args={[0.95, 1.7, 32, 1, true]} />
+      </mesh>
+    </group>
+  );
+}
+
+interface FrameProps {
   student: HonorStudentData;
-  position: [number, number, number];
-  rotation: [number, number, number];
+  slot: FrameSlot;
   isSelected: boolean;
   onSelect: (student: HonorStudentData) => void;
 }
 
-function getInitialsAvatarDataUrl(name: string): string {
-  if (typeof document === "undefined") return "";
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "";
-
-    // Gradient background
-    const grad = ctx.createLinearGradient(0, 0, 512, 512);
-    grad.addColorStop(0, "#1e1b4b");
-    grad.addColorStop(0.5, "#312e81");
-    grad.addColorStop(1, "#4338ca");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 512);
-
-    // Subtle star / crest circle
-    ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.arc(256, 220, 140, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Initials
-    const initials =
-      name
-        .trim()
-        .split(/\s+/)
-        .map((w) => w[0])
-        .slice(-2)
-        .join("")
-        .toUpperCase() || "SV";
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 130px Inter, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(initials, 256, 215);
-
-    // Badge banner
-    ctx.fillStyle = "#f59e0b";
-    ctx.fillRect(66, 390, 380, 52);
-
-    ctx.fillStyle = "#1e1b4b";
-    ctx.font = "bold 24px Inter, sans-serif";
-    ctx.fillText("⭐ SINH VIÊN 5 TỐT ⭐", 256, 423);
-
-    return canvas.toDataURL("image/png");
-  } catch {
-    return "";
-  }
-}
-
-export default function HonorFrame3D({
-  student,
-  position,
-  rotation,
-  isSelected,
-  onSelect,
-}: HonorFrame3DProps) {
-  const meshRef = useRef<THREE.Group>(null);
+function HonorFrame3D({ student, slot, isSelected, onSelect }: FrameProps) {
+  const inner = useRef<THREE.Group>(null);
+  const glow = useRef<THREE.MeshBasicMaterial>(null);
   const [hovered, setHovered] = useState(false);
+  useCursor(hovered);
 
-  // Avatar URL fallback to custom canvas data URL (100% WebGL-compatible, 0 CORS)
-  const fallbackAvatar = getInitialsAvatarDataUrl(student.sinh_vien.ho_ten);
-  const avatarUrl =
-    student.sinh_vien.avatar_url && student.sinh_vien.avatar_url.startsWith("http")
-      ? student.sinh_vien.avatar_url
-      : fallbackAvatar;
+  const portrait = useMemo(() => createPortraitTexture(student), [student]);
+  const plate = useMemo(() => createNameplateTexture(student), [student]);
+  useEffect(() => () => { portrait.dispose(); plate.dispose(); }, [portrait, plate]);
+
+  const active = isSelected || hovered;
 
   useFrame((_, delta) => {
-    if (meshRef.current) {
-      // Nhẹ nhàng nhô về phía trước khi hover hoặc khi được chọn
-      const targetScale = isSelected ? 1.12 : hovered ? 1.06 : 1;
-      meshRef.current.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        delta * 8
-      );
+    if (inner.current) {
+      easing.damp3(inner.current.position, [0, 0, active ? 0.22 : 0], 0.18, delta);
+      const s = isSelected ? 1.06 : hovered ? 1.03 : 1;
+      easing.damp3(inner.current.scale, [s, s, s], 0.18, delta);
     }
+    if (glow.current) easing.damp(glow.current, "opacity", isSelected ? 0.85 : hovered ? 0.45 : 0, 0.2, delta);
   });
 
   return (
-    <group
-      ref={meshRef}
-      position={position}
-      rotation={rotation}
-      onClick={(e) => {
-        e.stopPropagation();
-        onSelect(student);
-      }}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        setHovered(true);
-        document.body.style.cursor = "pointer";
-      }}
-      onPointerOut={() => {
-        setHovered(false);
-        document.body.style.cursor = "auto";
-      }}
-    >
-      {/* Khung viền mạ vàng ngoài cùng */}
-      <mesh position={[0, 0, -0.04]} castShadow>
-        <boxGeometry args={[1.5, 2.0, 0.08]} />
-        <meshStandardMaterial
-          color={isSelected ? "#f59e0b" : hovered ? "#fbbf24" : "#b45309"}
-          emissive={isSelected ? "#f59e0b" : hovered ? "#d97706" : "#000000"}
-          emissiveIntensity={isSelected ? 0.6 : hovered ? 0.4 : 0}
-          metalness={0.9}
-          roughness={0.2}
-        />
-      </mesh>
-
-      {/* Viền đen trang trí bên trong */}
-      <mesh position={[0, 0, -0.01]}>
-        <planeGeometry args={[1.36, 1.86]} />
-        <meshBasicMaterial color="#0f172a" />
-      </mesh>
-
-      {/* Ảnh chân dung Sinh viên (Drei Image) */}
-      <group position={[0, 0.18, 0.02]}>
-        <DreiImage
-          url={avatarUrl}
-          scale={[1.22, 1.4]}
-          transparent
-          radius={0.06}
-          toneMapped={false}
-        />
-      </group>
-
-      {/* Huy hiệu Cúp Vàng nhỏ góc trên */}
-      <group position={[0.5, 0.8, 0.06]}>
-        <mesh>
-          <circleGeometry args={[0.16, 24]} />
-          <meshBasicMaterial color="#fbbf24" />
-        </mesh>
-      </group>
-
-      {/* Bảng tên và Thông tin hiển thị dưới khung (HTML Billboard) */}
-      <Html
-        position={[0, -0.68, 0.08]}
-        center
-        distanceFactor={6}
-        transform
-        occlude
+    <group position={slot.pos} rotation={[0, slot.rotY, 0]}>
+      <PictureLight active={active} />
+      <group
+        ref={inner}
+        onClick={(e) => { e.stopPropagation(); onSelect(student); }}
+        onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
+        onPointerOut={() => setHovered(false)}
       >
-        <div
-          className={`w-64 p-3 rounded-xl backdrop-blur-md transition-all text-center select-none pointer-events-none ${
-            isSelected
-              ? "bg-indigo-950/90 border-2 border-amber-400 text-white shadow-xl shadow-amber-500/20"
-              : hovered
-              ? "bg-slate-900/90 border border-amber-300 text-white shadow-lg"
-              : "bg-slate-900/80 border border-slate-700/80 text-white/95"
-          }`}
-        >
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-              {student.so_lan_dat > 1
-                ? `${student.so_lan_dat} Lần Đạt Danh Hiệu`
-                : "Sinh viên 5 Tốt"}
-            </span>
-          </div>
-
-          <p className="text-xs font-bold truncate leading-tight">
-            {student.sinh_vien.ho_ten}
-          </p>
-
-          <p className="text-[10px] text-slate-300 truncate mt-0.5">
-            {student.sinh_vien.khoa?.ten_khoa ||
-              student.sinh_vien.lop?.ten_lop ||
-              student.sinh_vien.ma_sv}
-          </p>
-
-          <div className="mt-1.5 pt-1 border-t border-slate-700/50 flex items-center justify-center gap-1 text-[9px] text-amber-200 font-semibold">
-            <Award className="w-2.5 h-2.5" />
-            <span>Bấm để xem chi tiết</span>
-          </div>
-        </div>
-      </Html>
+        {/* quầng sáng khi chọn */}
+        <mesh position={[0, 0, -0.06]}>
+          <planeGeometry args={[FRAME_W + 0.35, FRAME_H + 0.35]} />
+          <meshBasicMaterial ref={glow} color={[3, 2.2, 0.7]} transparent opacity={0} toneMapped={false} depthWrite={false} />
+        </mesh>
+        {/* khung vàng */}
+        <mesh geometry={getFrameGeometry()} castShadow>
+          <meshStandardMaterial color="#d6a93f" metalness={1} roughness={0.22} />
+        </mesh>
+        {/* viền giấy passe-partout */}
+        <mesh position={[0, 0, -0.005]}>
+          <planeGeometry args={[FRAME_W - BORDER * 2 + 0.02, FRAME_H - BORDER * 2 + 0.02]} />
+          <meshStandardMaterial color="#f3ecdc" roughness={0.9} />
+        </mesh>
+        {/* ảnh chân dung */}
+        <mesh position={[0, 0.02, 0.004]}>
+          <planeGeometry args={[1.02, 1.28]} />
+          <meshStandardMaterial
+            map={portrait.texture}
+            emissiveMap={portrait.texture}
+            emissive="#ffffff"
+            emissiveIntensity={active ? 0.38 : 0.22}
+            roughness={0.55}
+          />
+        </mesh>
+        {/* huy hiệu sao cho SV đạt nhiều lần */}
+        {student.so_lan_dat > 1 && (
+          <mesh geometry={getStarGeometry()} position={[FRAME_W / 2 - 0.1, FRAME_H / 2 - 0.1, 0.09]} scale={0.13}>
+            <meshStandardMaterial color="#ff5a5a" emissive="#ff2d2d" emissiveIntensity={1.6} toneMapped={false} />
+          </mesh>
+        )}
+        {/* bảng tên đồng */}
+        <group position={[0, -FRAME_H / 2 - 0.3, 0.02]}>
+          <mesh castShadow>
+            <boxGeometry args={[1.32, 0.42, 0.04]} />
+            <meshStandardMaterial color="#5a3d0c" metalness={0.9} roughness={0.4} />
+          </mesh>
+          <mesh position={[0, 0, 0.022]}>
+            <planeGeometry args={[1.26, 0.378]} />
+            <meshStandardMaterial map={plate} metalness={0.6} roughness={0.35} emissiveMap={plate} emissive="#ffffff" emissiveIntensity={0.18} />
+          </mesh>
+        </group>
+      </group>
     </group>
   );
 }
+
+export default memo(HonorFrame3D);
+
+// Ô trống trên tường: "Gương mặt tiếp theo có thể là bạn"
+export const EmptyFrame3D = memo(function EmptyFrame3D({ slot }: { slot: FrameSlot }) {
+  const label = useMemo(() => createLabelTexture("VỊ TRÍ DÀNH CHO BẠN", "Gương mặt SV5T tiếp theo", "#9aa4c7", 512, 640), []);
+  useEffect(() => () => label.dispose(), [label]);
+  return (
+    <group position={slot.pos} rotation={[0, slot.rotY, 0]}>
+      <mesh geometry={getFrameGeometry()}>
+        <meshStandardMaterial color="#8a7340" metalness={1} roughness={0.4} />
+      </mesh>
+      <mesh position={[0, 0, -0.005]}>
+        <planeGeometry args={[FRAME_W - BORDER * 2 + 0.02, FRAME_H - BORDER * 2 + 0.02]} />
+        <meshStandardMaterial map={label} roughness={0.9} emissiveMap={label} emissive="#ffffff" emissiveIntensity={0.12} />
+      </mesh>
+    </group>
+  );
+});
